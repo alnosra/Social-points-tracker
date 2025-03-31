@@ -33,6 +33,11 @@
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css" rel="stylesheet">
     <!-- إضافة مكتبة لتصدير ملفات إكسل -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- إضافة Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-functions-compat.js"></script>
 </head>
 <body class="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen">
     <!-- نافذة التحميل -->
@@ -176,25 +181,25 @@
                             <div class="flex items-center justify-between mb-2">
                                 <div class="flex items-center">
                                     <div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white">
-                                        <span id="total-points" class="text-xl">758</span>
+                                        <span id="total-points" class="text-xl">0</span>
                                     </div>
                                     <div class="mr-4">
                                         <p class="font-bold text-sm md:text-base">مجموع النقاط</p>
-                                        <p id="last-update" class="text-xs text-gray-600 dark:text-gray-400">آخر تحديث تلقائي: منذ 5 دقائق</p>
+                                        <p id="last-update" class="text-xs text-gray-600 dark:text-gray-400">آخر تحديث تلقائي: --</p>
                                     </div>
                                 </div>
-                                <div id="today-points" class="text-green-500 bg-green-100 dark:bg-green-900 px-2 py-1 rounded-full text-xs md:text-sm">
-                                    +24 اليوم
+                                <div id="today-points" class="text-green-500 bg-green-100 dark:bg-green-900 px-2 py-1 rounded-full text-xs md:text-sm hidden">
+                                    +0 اليوم
                                 </div>
                             </div>
                             
                             <div class="my-4">
                                 <div class="h-1 w-full bg-gray-300 dark:bg-gray-700 rounded">
-                                    <div id="level-progress" class="h-1 bg-primary rounded" style="width: 75%"></div>
+                                    <div id="level-progress" class="h-1 bg-primary rounded" style="width: 0%"></div>
                                 </div>
                                 <div class="flex justify-between text-xs mt-1">
-                                    <p id="level-text" class="text-gray-600 dark:text-gray-400">758 / 1000 للمستوى التالي</p>
-                                    <p id="user-level" class="text-gray-600 dark:text-gray-400">المستوى: 7</p>
+                                    <p id="level-text" class="text-gray-600 dark:text-gray-400">0 / 1000 للمستوى التالي</p>
+                                    <p id="user-level" class="text-gray-600 dark:text-gray-400">المستوى: 1</p>
                                 </div>
                             </div>
                         </div>
@@ -202,15 +207,15 @@
                         <div class="flex flex-col justify-center">
                             <div class="mb-2 text-sm font-medium">سجل الحضور الأسبوعي:</div>
                             <div id="attendance-indicators" class="flex flex-wrap gap-2 md:gap-3 justify-center md:justify-start">
-                                <div class="attendance-day bg-primary w-10 h-10 rounded-full flex items-center justify-center text-white"><i class="fas fa-check text-sm"></i></div>
-                                <div class="attendance-day bg-primary w-10 h-10 rounded-full flex items-center justify-center text-white"><i class="fas fa-check text-sm"></i></div>
-                                <div class="attendance-day bg-primary w-10 h-10 rounded-full flex items-center justify-center text-white"><i class="fas fa-check text-sm"></i></div>
-                                <div class="attendance-day bg-primary w-10 h-10 rounded-full flex items-center justify-center text-white"><i class="fas fa-check text-sm"></i></div>
-                                <div class="attendance-day bg-primary w-10 h-10 rounded-full flex items-center justify-center text-white"><i class="fas fa-check text-sm"></i></div>
-                                <div class="attendance-day bg-primary w-10 h-10 rounded-full flex items-center justify-center text-white"><i class="fas fa-check text-sm"></i></div>
+                                <div class="attendance-day bg-gray-200 dark:bg-gray-700 w-10 h-10 rounded-full flex items-center justify-center text-sm">أ</div>
+                                <div class="attendance-day bg-gray-200 dark:bg-gray-700 w-10 h-10 rounded-full flex items-center justify-center text-sm">إ</div>
+                                <div class="attendance-day bg-gray-200 dark:bg-gray-700 w-10 h-10 rounded-full flex items-center justify-center text-sm">ث</div>
+                                <div class="attendance-day bg-gray-200 dark:bg-gray-700 w-10 h-10 rounded-full flex items-center justify-center text-sm">أ</div>
+                                <div class="attendance-day bg-gray-200 dark:bg-gray-700 w-10 h-10 rounded-full flex items-center justify-center text-sm">خ</div>
+                                <div class="attendance-day bg-gray-200 dark:bg-gray-700 w-10 h-10 rounded-full flex items-center justify-center text-sm">ج</div>
                                 <div class="attendance-day bg-gray-200 dark:bg-gray-700 w-10 h-10 rounded-full flex items-center justify-center text-sm">س</div>
                             </div>
-                            <p id="streak-text" class="text-center md:text-right text-xs mt-2 text-gray-600 dark:text-gray-400">متتالي: 6 أيام</p>
+                            <p id="streak-text" class="text-center md:text-right text-xs mt-2 text-gray-600 dark:text-gray-400">متتالي: 0 أيام</p>
                         </div>
                     </div>
                 </section>
@@ -219,807 +224,785 @@
                 <section class="mb-6 bg-white dark:bg-gray-800 rounded-xl p-4 md:p-6 shadow-md">
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-lg md:text-xl font-bold">تجميع النقاط التلقائي</h2>
-                        <span class="bg-green-500 text-white text-xs px-2 py-1 rounded-full">مفعل</span>
+                        <span id="auto-collect-status" class="bg-green-500 text-white text-xs px-2 py-1 rounded-full">مفعل</span>
                     </div>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                        <!-- حالة تيك توك -->
-                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                            <div class="flex items-center justify-between mb-2">
-                                <div class="flex items-center">
-                                    <i class="fab fa-tiktok text-xl"></i>
-                                    <span class="mr-2 font-medium">تيك توك</span>
-                                </div>
-                                <span class="h-3 w-3 bg-green-500 rounded-full"></span>
-                            </div>
-                            <p class="text-xs text-gray-600 dark:text-gray-400">آخر تحديث: منذ 3 دقائق</p>
-                            <p class="text-xs mt-1"><span class="text-green-500">+12</span> نقطة اليوم</p>
-                        </div>
-
-                        <!-- حالة إنستغرام -->
-                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                            <div class="flex items-center justify-between mb-2">
-                                <div class="flex items-center">
-                                    <i class="fab fa-instagram text-xl text-[#E1306C]"></i>
-                                    <span class="mr-2 font-medium">إنستغرام</span>
-                                </div>
-                                <span class="h-3 w-3 bg-green-500 rounded-full"></span>
-                            </div>
-                            <p class="text-xs text-gray-600 dark:text-gray-400">آخر تحديث: منذ 5 دقائق</p>
-                            <p class="text-xs mt-1"><span class="text-green-500">+7</span> نقطة اليوم</p>
-                        </div>
-
-                        <!-- حالة منصة إكس -->
-                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                            <div class="flex items-center justify-between mb-2">
-                                <div class="flex items-center">
-                                    <i class="fab fa-twitter text-xl text-[#1DA1F2]"></i>
-                                    <span class="mr-2 font-medium">منصة إكس</span>
-                                </div>
-                                <span class="h-3 w-3 bg-green-500 rounded-full"></span>
-                            </div>
-                            <p class="text-xs text-gray-600 dark:text-gray-400">آخر تحديث: منذ 8 دقائق</p>
-                            <p class="text-xs mt-1"><span class="text-green-500">+3</span> نقطة اليوم</p>
-                        </div>
-
-                        <!-- حالة فيسبوك -->
-                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                            <div class="flex items-center justify-between mb-2">
-                                <div class="flex items-center">
-                                    <i class="fab fa-facebook text-xl text-[#4267B2]"></i>
-                                    <span class="mr-2 font-medium">فيسبوك</span>
-                                </div>
-                                <span class="h-3 w-3 bg-green-500 rounded-full"></span>
-                            </div>
-                            <p class="text-xs text-gray-600 dark:text-gray-400">آخر تحديث: منذ 10 دقائق</p>
-                            <p class="text-xs mt-1"><span class="text-green-500">+2</span> نقطة اليوم</p>
-                        </div>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4" id="platforms-container">
+                        <!-- ستتم إضافة المنصات هنا ديناميكيًا -->
                     </div>
 
                     <div class="flex justify-between items-center bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
                         <div class="flex items-center">
                             <i class="fas fa-sync-alt text-blue-600 dark:text-blue-400 mr-2"></i>
                             <div>
-                                <p class="text-sm text-blue-800 dark:text-blue-300 font-medium">تحديث تلقائي كل 15 دقيقة</p>
-                                <p class="text-xs text-blue-600 dark:text-blue-400">التحديث التالي بعد: 10 دقائق</p>
+                                <p class="text-sm font-medium">التحديث التلقائي</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">يتم تحديث النقاط كل ساعة تلقائيًا</p>
                             </div>
                         </div>
-                        <button id="manual-refresh" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-all">
+                        <button id="manual-update" class="text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 px-3 py-1 rounded-lg">
                             تحديث الآن
                         </button>
                     </div>
                 </section>
 
-                <!-- تصدير التقارير -->
+                <!-- لوحة التحكم -->
                 <section class="mb-6 bg-white dark:bg-gray-800 rounded-xl p-4 md:p-6 shadow-md">
-                    <h2 class="text-lg md:text-xl font-bold mb-4">تقارير المتفاعلين</h2>
+                    <h2 class="text-lg md:text-xl font-bold mb-4">لوحة التحكم</h2>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                            <div class="flex items-center mb-3">
-                                <i class="fas fa-file-excel text-green-600 dark:text-green-500 text-2xl mr-3"></i>
-                                <div>
-                                    <h3 class="font-bold">تقرير المتفاعلين اليومي</h3>
-                                    <p class="text-xs text-gray-600 dark:text-gray-400">يتم إنشاؤه تلقائيًا كل يوم في الساعة 12 صباحًا</p>
-                                </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <button id="export-excel" class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 p-3 rounded-lg flex flex-col items-center justify-center transition-all">
+                            <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-2">
+                                <i class="fas fa-file-excel text-green-600 dark:text-green-400"></i>
                             </div>
-                            <div class="flex justify-between">
-                                <div class="text-sm">آخر تحديث: <span class="text-gray-600 dark:text-gray-400">اليوم 00:05</span></div>
-                                <button id="export-daily" class="text-primary hover:text-primary/80 text-sm flex items-center">
-                                    <i class="fas fa-download mr-1"></i> تحميل
-                                </button>
-                            </div>
-                        </div>
+                            <span class="text-sm font-medium">تصدير تقرير Excel</span>
+                        </button>
                         
-                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                            <div class="flex items-center mb-3">
-                                <i class="fas fa-file-excel text-green-600 dark:text-green-500 text-2xl mr-3"></i>
-                                <div>
-                                    <h3 class="font-bold">تقرير المتفاعلين الأسبوعي</h3>
-                                    <p class="text-xs text-gray-600 dark:text-gray-400">يتم إنشاؤه تلقائيًا كل يوم أحد</p>
-                                </div>
+                        <button id="view-reports" class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 p-3 rounded-lg flex flex-col items-center justify-center transition-all">
+                            <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-2">
+                                <i class="fas fa-chart-bar text-blue-600 dark:text-blue-400"></i>
                             </div>
-                            <div class="flex justify-between">
-                                <div class="text-sm">آخر تحديث: <span class="text-gray-600 dark:text-gray-400">20/06/2023</span></div>
-                                <button id="export-weekly" class="text-primary hover:text-primary/80 text-sm flex items-center">
-                                    <i class="fas fa-download mr-1"></i> تحميل
-                                </button>
+                            <span class="text-sm font-medium">عرض التقارير</span>
+                        </button>
+                        
+                        <button id="manage-users" class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 p-3 rounded-lg flex flex-col items-center justify-center transition-all">
+                            <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mb-2">
+                                <i class="fas fa-users text-purple-600 dark:text-purple-400"></i>
                             </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-4">
-                        <button id="custom-report" class="flex items-center text-sm text-primary hover:text-primary/80">
-                            <i class="fas fa-plus-circle mr-1"></i> إنشاء تقرير مخصص
+                            <span class="text-sm font-medium">إدارة المستخدمين</span>
+                        </button>
+                        
+                        <button id="settings-btn" class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 p-3 rounded-lg flex flex-col items-center justify-center transition-all">
+                            <div class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mb-2">
+                                <i class="fas fa-cog text-yellow-600 dark:text-yellow-400"></i>
+                            </div>
+                            <span class="text-sm font-medium">الإعدادات</span>
                         </button>
                     </div>
                 </section>
 
-                <!-- تفاصيل النقاط حسب المنصة -->
-                <section class="mb-6">
-                    <h2 class="text-lg md:text-xl font-bold mb-4">إحصائيات المنصات</h2>
-                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        <!-- تيك توك -->
-                        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow border-t-4 border-[#000000] dark:border-[#25F4EE]">
-                            <div class="flex justify-between items-center">
-                                <div class="flex items-center">
-                                    <i class="fab fa-tiktok text-xl"></i>
-                                    <span class="mr-2 font-medium">تيك توك</span>
-                                </div>
-                                <span id="platform-tiktok-total" class="text-lg font-bold">324</span>
-                            </div>
-                            <div class="mt-3">
-                                <div class="flex justify-between text-xs mb-1">
-                                    <span>لايك</span>
-                                    <span id="platform-tiktok-like">+143</span>
-                                </div>
-                                <div class="flex justify-between text-xs mb-1">
-                                    <span>مشاركة</span>
-                                    <span id="platform-tiktok-share">+95</span>
-                                </div>
-                                <div class="flex justify-between text-xs">
-                                    <span>تعليق</span>
-                                    <span id="platform-tiktok-comment">+86</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- إنستغرام -->
-                        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow border-t-4 border-[#E1306C]">
-                            <div class="flex justify-between items-center">
-                                <div class="flex items-center">
-                                    <i class="fab fa-instagram text-xl"></i>
-                                    <span class="mr-2 font-medium">إنستغرام</span>
-                                </div>
-                                <span id="platform-instagram-total" class="text-lg font-bold">216</span>
-                            </div>
-                            <div class="mt-3">
-                                <div class="flex justify-between text-xs mb-1">
-                                    <span>لايك</span>
-                                    <span id="platform-instagram-like">+87</span>
-                                </div>
-                                <div class="flex justify-between text-xs mb-1">
-                                    <span>مشاركة</span>
-                                    <span id="platform-instagram-share">+58</span>
-                                </div>
-                                <div class="flex justify-between text-xs">
-                                    <span>تعليق</span>
-                                    <span id="platform-instagram-comment">+71</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- منصة إكس -->
-                        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow border-t-4 border-[#1DA1F2]">
-                            <div class="flex justify-between items-center">
-                                <div class="flex items-center">
-                                    <i class="fab fa-twitter text-xl"></i>
-                                    <span class="mr-2 font-medium">منصة إكس</span>
-                                </div>
-                                <span id="platform-twitter-total" class="text-lg font-bold">134</span>
-                            </div>
-                            <div class="mt-3">
-                                <div class="flex justify-between text-xs mb-1">
-                                    <span>لايك</span>
-                                    <span id="platform-twitter-like">+64</span>
-                                </div>
-                                <div class="flex justify-between text-xs mb-1">
-                                    <span>إعادة نشر</span>
-                                    <span id="platform-twitter-share">+35</span>
-                                </div>
-                                <div class="flex justify-between text-xs">
-                                    <span>ردود</span>
-                                    <span id="platform-twitter-comment">+35</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- فيسبوك -->
-                        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow border-t-4 border-[#4267B2]">
-                            <div class="flex justify-between items-center">
-                                <div class="flex items-center">
-                                    <i class="fab fa-facebook text-xl"></i>
-                                    <span class="mr-2 font-medium">فيسبوك</span>
-                                </div>
-                                <span id="platform-facebook-total" class="text-lg font-bold">84</span>
-                            </div>
-                            <div class="mt-3">
-                                <div class="flex justify-between text-xs mb-1">
-                                    <span>لايك</span>
-                                    <span id="platform-facebook-like">+32</span>
-                                </div>
-                                <div class="flex justify-between text-xs mb-1">
-                                    <span>مشاركة</span>
-                                    <span id="platform-facebook-share">+28</span>
-                                </div>
-                                <div class="flex justify-between text-xs">
-                                    <span>تعليق</span>
-                                    <span id="platform-facebook-comment">+24</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- التصنيف اليومي -->
-                <section class="mb-16">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-lg md:text-xl font-bold">التصنيف اليومي</h2>
-                        <div class="text-sm">
-                            <span id="leaderboard-update" class="text-gray-500 dark:text-gray-400">آخر تحديث: منذ 5 دقائق</span>
-                            <button id="refresh-leaderboard" class="text-primary hover:text-primary/80 mr-2">
-                                <i class="fas fa-sync-alt"></i>
-                            </button>
-                        </div>
+                <!-- آخر التفاعلات -->
+                <section class="bg-white dark:bg-gray-800 rounded-xl p-4 md:p-6 shadow-md">
+                    <h2 class="text-lg md:text-xl font-bold mb-4">آخر التفاعلات</h2>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">التاريخ</th>
+                                    <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">المنصة</th>
+                                    <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">نوع التفاعل</th>
+                                    <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">النقاط</th>
+                                </tr>
+                            </thead>
+                            <tbody id="interactions-list" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                <!-- ستتم إضافة التفاعلات هنا ديناميكيًا -->
+                            </tbody>
+                        </table>
                     </div>
                     
-                    <div class="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md">
-                        <div id="user-ranking" class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                            <div class="flex items-center">
-                                <div class="bg-primary text-white w-10 h-10 text-lg font-bold rounded-lg flex items-center justify-center ml-3">
-                                    <span id="user-rank">4</span>
-                                </div>
-                                <div>
-                                    <p class="font-bold text-sm">أنت</p>
-                                    <p class="text-xs text-gray-600 dark:text-gray-400"><span id="your-points">24</span> نقطة اليوم</p>
-                                </div>
-                            </div>
-                            <div>
-                                <span id="rank-change" class="text-green-500 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full text-xs">
-                                    +1 <i class="fas fa-arrow-up"></i>
-                                </span>
-                            </div>
-                        </div>
-                        
-                        <div class="overflow-hidden overflow-x-auto">
-                            <table class="min-w-full">
-                                <thead class="bg-gray-100 dark:bg-gray-700">
-                                    <tr>
-                                        <th class="py-2 px-3 text-right text-xs font-medium">#</th>
-                                        <th class="py-2 px-3 text-right text-xs font-medium">المستخدم</th>
-                                        <th class="py-2 px-3 text-right text-xs font-medium">النقاط اليوم</th>
-                                        <th class="py-2 px-3 text-right text-xs font-medium">المستوى</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="leaderboard" class="divide-y divide-gray-200 dark:divide-gray-700">
-                                    <tr class="bg-yellow-50 dark:bg-yellow-900/20">
-                                        <td class="py-3 px-3 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="bg-yellow-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">
-                                                    <span>1</span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="py-3 px-3 whitespace-nowrap text-sm">أحمد محمد</td>
-                                        <td class="py-3 px-3 whitespace-nowrap text-sm font-bold">86</td>
-                                        <td class="py-3 px-3 whitespace-nowrap">
-                                            <span class="bg-purple-500 text-white text-xs px-2 py-1 rounded">متقدم</span>
-                                        </td>
-                                    </tr>
-                                    <tr class="bg-gray-50 dark:bg-gray-800/50">
-                                        <td class="py-3 px-3 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="bg-gray-400 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">
-                                                    <span>2</span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="py-3 px-3 whitespace-nowrap text-sm">سارة علي</td>
-                                        <td class="py-3 px-3 whitespace-nowrap text-sm font-bold">52</td>
-                                        <td class="py-3 px-3 whitespace-nowrap">
-                                            <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded">متوسط</span>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="py-3 px-3 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="bg-amber-700 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">
-                                                    <span>3</span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="py-3 px-3 whitespace-nowrap text-sm">محمد عبدالله</td>
-                                        <td class="py-3 px-3 whitespace-nowrap text-sm font-bold">36</td>
-                                        <td class="py-3 px-3 whitespace-nowrap">
-                                            <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded">متوسط</span>
-                                        </td>
-                                    </tr>
-                                    <tr class="bg-blue-50 dark:bg-blue-900/20">
-                                        <td class="py-3 px-3 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">
-                                                    <span>4</span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="py-3 px-3 whitespace-nowrap text-sm font-bold">أنت</td>
-                                        <td class="py-3 px-3 whitespace-nowrap text-sm font-bold">24</td>
-                                        <td class="py-3 px-3 whitespace-nowrap">
-                                            <span class="bg-green-500 text-white text-xs px-2 py-1 rounded">مبتدئ</span>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="py-3 px-3 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 w-6 h-6 rounded-full flex items-center justify-center text-xs">
-                                                    <span>5</span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="py-3 px-3 whitespace-nowrap text-sm">خالد عمر</td>
-                                        <td class="py-3 px-3 whitespace-nowrap text-sm font-bold">18</td>
-                                        <td class="py-3 px-3 whitespace-nowrap">
-                                            <span class="bg-green-500 text-white text-xs px-2 py-1 rounded">مبتدئ</span>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        <div class="p-3 text-center">
-                            <button id="show-more-btn" class="text-primary text-sm hover:underline">عرض المزيد...</button>
-                        </div>
+                    <div class="mt-4 text-center">
+                        <button id="view-all-interactions" class="text-primary text-sm hover:underline">عرض كل التفاعلات</button>
                     </div>
                 </section>
             </main>
         </div>
-
-        <!-- نموذج التقرير المخصص -->
-        <div id="custom-report-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
-            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-bold">إنشاء تقرير مخصص</h3>
-                    <button id="close-custom-report" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="space-y-4">
-                    <div>
-                        <label for="report-type" class="block text-sm font-medium mb-1">نوع التقرير</label>
-                        <select id="report-type" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700">
-                            <option value="top-users">المتفاعلين الأكثر نشاطًا</option>
-                            <option value="platform-stats">إحصائيات المنصات</option>
-                            <option value="activity-log">سجل النشاط</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="report-date-range" class="block text-sm font-medium mb-1">نطاق التاريخ</label>
-                        <select id="report-date-range" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700">
-                            <option value="today">اليوم</option>
-                            <option value="yesterday">أمس</option>
-                            <option value="week">هذا الأسبوع</option>
-                            <option value="month">هذا الشهر</option>
-                            <option value="custom">مخصص</option>
-                        </select>
-                    </div>
-                    <div id="custom-date" class="hidden space-y-3">
-                        <div>
-                            <label for="start-date" class="block text-sm font-medium mb-1">من تاريخ</label>
-                            <input type="date" id="start-date" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700">
-                        </div>
-                        <div>
-                            <label for="end-date" class="block text-sm font-medium mb-1">إلى تاريخ</label>
-                            <input type="date" id="end-date" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700">
-                        </div>
-                    </div>
-                    <div>
-                        <label for="report-format" class="block text-sm font-medium mb-1">صيغة التقرير</label>
-                        <select id="report-format" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700">
-                            <option value="excel">Excel (.xlsx)</option>
-                            <option value="csv">CSV (.csv)</option>
-                            <option value="pdf">PDF (.pdf)</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="mt-6">
-                    <button id="generate-report" class="w-full bg-primary hover:bg-opacity-90 text-white py-2 px-4 rounded-lg transition-all">إنشاء التقرير</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- القائمة السفلية -->
-        <footer class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-lg border-t border-gray-200 dark:border-gray-700 z-10">
-            <div class="container mx-auto">
-                <div class="flex justify-around py-2">
-                    <button id="nav-home" class="flex flex-col items-center text-primary">
-                        <i class="fas fa-home text-lg"></i>
-                        <span class="text-xs mt-1">الرئيسية</span>
-                    </button>
-                    <button id="nav-stats" class="flex flex-col items-center text-gray-500 dark:text-gray-400">
-                        <i class="fas fa-chart-line text-lg"></i>
-                        <span class="text-xs mt-1">الإحصائيات</span>
-                    </button>
-                    <button id="nav-add" class="flex flex-col items-center text-gray-500 dark:text-gray-400">
-                        <i class="fas fa-plus-circle text-lg"></i>
-                        <span class="text-xs mt-1">إضافة</span>
-                    </button>
-                    <button id="nav-leaderboard" class="flex flex-col items-center text-gray-500 dark:text-gray-400">
-                        <i class="fas fa-trophy text-lg"></i>
-                        <span class="text-xs mt-1">التصنيف</span>
-                    </button>
-                    <button id="nav-messages" class="flex flex-col items-center text-gray-500 dark:text-gray-400 relative">
-                        <i class="fas fa-comments text-lg"></i>
-                        <span class="text-xs mt-1">الرسائل</span>
-                        <span class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">2</span>
-                    </button>
-                </div>
-            </div>
-        </footer>
     </div>
 
+    <!-- الكود البرمجي -->
     <script>
-        // تشغيل أو إيقاف تقليد Firebase - اضبط على false للإنتاج
-        const MOCK_FIREBASE = true;
-        
-        // محاكاة تأخير تحميل
-        setTimeout(() => {
-            document.getElementById('loading-screen').classList.add('hidden');
-            if (MOCK_FIREBASE) {
-                document.getElementById('login-screen').classList.remove('hidden');
-            }
-        }, 1500);
+        // تهيئة Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyD...", // استبدل بمعلومات مشروعك
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef123456"
+        };
 
-        // تبديل بين شاشات تسجيل الدخول والتسجيل
-        document.getElementById('show-register')?.addEventListener('click', () => {
-            document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('register-screen').classList.remove('hidden');
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        const functions = firebase.functions();
+
+        // متغيرات التطبيق
+        let currentUser = null;
+        let userData = null;
+
+        // عناصر واجهة المستخدم
+        const elements = {
+            loadingScreen: document.getElementById('loading-screen'),
+            loginScreen: document.getElementById('login-screen'),
+            registerScreen: document.getElementById('register-screen'),
+            mainApp: document.getElementById('main-app'),
+            loginBtn: document.getElementById('login-btn'),
+            registerBtn: document.getElementById('register-btn'),
+            googleLoginBtn: document.getElementById('google-login'),
+            logoutBtn: document.getElementById('logout-btn'),
+            showRegisterBtn: document.getElementById('show-register'),
+            showLoginBtn: document.getElementById('show-login'),
+            emailInput: document.getElementById('email'),
+            passwordInput: document.getElementById('password'),
+            regNameInput: document.getElementById('reg-name'),
+            regEmailInput: document.getElementById('reg-email'),
+            regPasswordInput: document.getElementById('reg-password'),
+            loginError: document.getElementById('login-error'),
+            registerError: document.getElementById('register-error'),
+            userName: document.getElementById('user-name'),
+            userEmail: document.getElementById('user-email'),
+            totalPoints: document.getElementById('total-points'),
+            todayPoints: document.getElementById('today-points'),
+            levelProgress: document.getElementById('level-progress'),
+            levelText: document.getElementById('level-text'),
+            userLevel: document.getElementById('user-level'),
+            lastUpdate: document.getElementById('last-update'),
+            attendanceBtn: document.getElementById('attendance-btn'),
+            attendanceIndicators: document.getElementById('attendance-indicators'),
+            streakText: document.getElementById('streak-text'),
+            platformsContainer: document.getElementById('platforms-container'),
+            autoCollectStatus: document.getElementById('auto-collect-status'),
+            manualUpdateBtn: document.getElementById('manual-update'),
+            interactionsList: document.getElementById('interactions-list'),
+            exportExcelBtn: document.getElementById('export-excel'),
+            notificationsBtn: document.getElementById('notifications-btn'),
+            notificationsMenu: document.getElementById('notifications-menu'),
+            notificationsList: document.getElementById('notifications-list'),
+            notificationsCount: document.getElementById('notifications-count'),
+            newNotificationsBadge: document.getElementById('new-notifications-badge'),
+            markAllReadBtn: document.getElementById('mark-all-read'),
+            notificationContainer: document.getElementById('notification-container')
+        };
+
+        // أحداث واجهة المستخدم
+        elements.showRegisterBtn.addEventListener('click', () => {
+            elements.loginScreen.classList.add('hidden');
+            elements.registerScreen.classList.remove('hidden');
+            elements.loginError.classList.add('hidden');
         });
-        
-        document.getElementById('show-login')?.addEventListener('click', () => {
-            document.getElementById('register-screen').classList.add('hidden');
-            document.getElementById('login-screen').classList.remove('hidden');
+
+        elements.showLoginBtn.addEventListener('click', () => {
+            elements.registerScreen.classList.add('hidden');
+            elements.loginScreen.classList.remove('hidden');
+            elements.registerError.classList.add('hidden');
         });
-        
-        // تبديل قائمة المستخدم
-        document.getElementById('user-menu-btn')?.addEventListener('click', () => {
-            const menu = document.getElementById('user-menu');
-            menu.classList.toggle('hidden');
-        });
-        
-        // تبديل قائمة الإشعارات
-        document.getElementById('notifications-btn')?.addEventListener('click', () => {
-            const menu = document.getElementById('notifications-menu');
-            menu.classList.toggle('hidden');
-            
-            // عند فتح الإشعارات، نخفي علامة العدد
-            if (!menu.classList.contains('hidden')) {
-                document.getElementById('notifications-count').classList.add('hidden');
-                document.getElementById('new-notifications-badge').classList.add('hidden');
-                
-                // إضافة إشعارات لأغراض العرض
-                populateNotifications();
+
+        elements.loginBtn.addEventListener('click', loginUser);
+        elements.registerBtn.addEventListener('click', registerUser);
+        elements.logoutBtn.addEventListener('click', logoutUser);
+        elements.googleLoginBtn.addEventListener('click', loginWithGoogle);
+        elements.attendanceBtn.addEventListener('click', markAttendance);
+        elements.manualUpdateBtn.addEventListener('click', manualUpdatePoints);
+        elements.exportExcelBtn.addEventListener('click', exportToExcel);
+        elements.notificationsBtn.addEventListener('click', toggleNotificationsMenu);
+        elements.markAllReadBtn.addEventListener('click', markAllNotificationsAsRead);
+
+        // إخفاء القوائم عند النقر خارجها
+        document.addEventListener('click', (e) => {
+            if (!elements.notificationsBtn.contains(e.target) && !elements.notificationsMenu.contains(e.target)) {
+                elements.notificationsMenu.classList.add('hidden');
             }
         });
-        
-        // تعيين كل الإشعارات كمقروءة
-        document.getElementById('mark-all-read')?.addEventListener('click', () => {
-            const notificationItems = document.querySelectorAll('.notification-unread');
-            notificationItems.forEach(item => {
-                item.classList.remove('notification-unread', 'bg-blue-50', 'dark:bg-blue-900/20');
-            });
-            showNotification('تم تعيين جميع الإشعارات كمقروءة');
-        });
-        
-        // تسجيل الحضور
-        document.getElementById('attendance-btn')?.addEventListener('click', function() {
-            this.classList.remove('bg-green-500', 'hover:bg-green-600');
-            this.classList.add('bg-gray-400', 'cursor-not-allowed');
-            this.innerHTML = '<i class="fas fa-check-circle mr-1"></i> <span>تم التسجيل</span>';
-            this.disabled = true;
-            
-            showNotification('تم تسجيل حضورك اليومي بنجاح! +5 نقاط');
-        });
-        
-        // التحديث اليدوي للبيانات
-        document.getElementById('manual-refresh')?.addEventListener('click', function() {
-            this.disabled = true;
-            this.classList.add('opacity-75');
-            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> جارٍ التحديث...';
-            
-            // محاكاة تأخير التحديث
-            setTimeout(() => {
-                this.disabled = false;
-                this.classList.remove('opacity-75');
-                this.innerHTML = 'تحديث الآن';
-                
-                // تحديث بعض البيانات العشوائية
-                const randomPoints = Math.floor(Math.random() * 10) + 1;
-                const currentPoints = parseInt(document.getElementById('total-points').textContent);
-                document.getElementById('total-points').textContent = (currentPoints + randomPoints).toString();
-                document.getElementById('today-points').textContent = `+${parseInt(document.getElementById('today-points').textContent.replace('+', '')) + randomPoints} اليوم`;
-                document.getElementById('last-update').textContent = 'آخر تحديث تلقائي: الآن';
-                
-                showNotification(`تم تحديث البيانات بنجاح! +${randomPoints} نقطة جديدة`);
-                
-                // إضافة إشعار جديد
-                addNewNotification('تم اكتشاف نشاط جديد على حساباتك!', 'تم اكتشاف تفاعلات جديدة وإضافة النقاط تلقائيًا.');
-            }, 2000);
-        });
-        
-        // تصدير التقرير اليومي
-        document.getElementById('export-daily')?.addEventListener('click', function() {
-            exportToExcel('تقرير_المتفاعلين_اليومي');
-        });
-        
-        // تصدير التقرير الأسبوعي
-        document.getElementById('export-weekly')?.addEventListener('click', function() {
-            exportToExcel('تقرير_المتفاعلين_الأسبوعي');
-        });
-        
-        // فتح نموذج التقرير المخصص
-        document.getElementById('custom-report')?.addEventListener('click', function() {
-            document.getElementById('custom-report-modal').classList.remove('hidden');
-        });
-        
-        // إغلاق نموذج التقرير المخصص
-        document.getElementById('close-custom-report')?.addEventListener('click', function() {
-            document.getElementById('custom-report-modal').classList.add('hidden');
-        });
-        
-        // تغيير نطاق التاريخ
-        document.getElementById('report-date-range')?.addEventListener('change', function() {
-            if (this.value === 'custom') {
-                document.getElementById('custom-date').classList.remove('hidden');
+
+        // مراقبة حالة المصادقة
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                elements.loginScreen.classList.add('hidden');
+                elements.registerScreen.classList.add('hidden');
+                elements.mainApp.classList.remove('hidden');
+                updateUserInfo(user);
+                fetchUserData();
             } else {
-                document.getElementById('custom-date').classList.add('hidden');
+                currentUser = null;
+                elements.mainApp.classList.add('hidden');
+                elements.loginScreen.classList.remove('hidden');
             }
+            elements.loadingScreen.classList.add('hidden');
         });
-        
-        // إنشاء تقرير مخصص
-        document.getElementById('generate-report')?.addEventListener('click', function() {
-            const reportType = document.getElementById('report-type').value;
-            const dateRange = document.getElementById('report-date-range').value;
+
+        // تسجيل الدخول
+        async function loginUser() {
+            const email = elements.emailInput.value;
+            const password = elements.passwordInput.value;
+
+            if (!email || !password) {
+                showError(elements.loginError, 'يرجى إدخال البريد الإلكتروني وكلمة المرور');
+                return;
+            }
+
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                showNotification('تم تسجيل الدخول بنجاح!');
+            } catch (error) {
+                showError(elements.loginError, getAuthErrorMessage(error));
+            }
+        }
+
+        // تسجيل الدخول باستخدام جوجل
+        async function loginWithGoogle() {
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                await auth.signInWithPopup(provider);
+                showNotification('تم تسجيل الدخول بنجاح!');
+            } catch (error) {
+                showError(elements.loginError, getAuthErrorMessage(error));
+            }
+        }
+
+        // إنشاء حساب جديد
+        async function registerUser() {
+            const name = elements.regNameInput.value;
+            const email = elements.regEmailInput.value;
+            const password = elements.regPasswordInput.value;
+
+            if (!name || !email || !password) {
+                showError(elements.registerError, 'يرجى إكمال جميع الحقول');
+                return;
+            }
+
+            if (password.length < 8) {
+                showError(elements.registerError, 'كلمة المرور يجب أن تكون 8 أحرف على الأقل');
+                return;
+            }
+
+            try {
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                
+                // تحديث اسم المستخدم
+                await userCredential.user.updateProfile({
+                    displayName: name
+                });
+
+                // إنشاء مستند المستخدم في Firestore
+                await db.collection('users').doc(userCredential.user.uid).set({
+                    name: name,
+                    email: email,
+                    points: 0,
+                    level: 1,
+                    joinDate: new Date(),
+                    lastAttendance: null,
+                    attendanceStreak: 0,
+                    platforms: {
+                        tiktok: { total: 0, like: 0, share: 0, comment: 0 },
+                        instagram: { total: 0, like: 0, share: 0, comment: 0 },
+                        twitter: { total: 0, like: 0, share: 0, comment: 0 },
+                        facebook: { total: 0, like: 0, share: 0, comment: 0 }
+                    }
+                });
+
+                showNotification('تم إنشاء الحساب بنجاح!');
+            } catch (error) {
+                showError(elements.registerError, getAuthErrorMessage(error));
+            }
+        }
+
+        // تسجيل الخروج
+        async function logoutUser() {
+            try {
+                await auth.signOut();
+                showNotification('تم تسجيل الخروج بنجاح!');
+            } catch (error) {
+                console.error('Error signing out:', error);
+            }
+        }
+
+        // تحديث معلومات المستخدم
+        function updateUserInfo(user) {
+            elements.userName.textContent = user.displayName || 'مستخدم جديد';
+            elements.userEmail.textContent = user.email;
+        }
+
+        // جلب بيانات المستخدم من Firestore
+        async function fetchUserData() {
+            if (!currentUser) return;
+
+            try {
+                const doc = await db.collection('users').doc(currentUser.uid).get();
+                
+                if (doc.exists) {
+                    userData = doc.data();
+                    updateDashboard(userData);
+                    fetchInteractions();
+                    fetchNotifications();
+                }
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+            }
+        }
+
+        // تحديث لوحة التحكم
+        function updateDashboard(data) {
+            // تحديث النقاط والمستوى
+            elements.totalPoints.textContent = data.points || 0;
+            elements.userLevel.textContent = `المستوى: ${data.level || 1}`;
             
-            document.getElementById('custom-report-modal').classList.add('hidden');
+            // حساب التقدم نحو المستوى التالي
+            const nextLevelPoints = (data.level || 1) * 1000;
+            const progressPercentage = Math.min(Math.floor((data.points || 0) / nextLevelPoints * 100), 100);
+            elements.levelProgress.style.width = `${progressPercentage}%`;
+            elements.levelText.textContent = `${data.points || 0} / ${nextLevelPoints} للمستوى التالي`;
             
-            const reportName = `تقرير_${reportType}_${dateRange}`;
-            exportToExcel(reportName);
-        });
-        
-        // تصدير إلى إكسل
-        function exportToExcel(reportName) {
-            // إنشاء بيانات وهمية لتمثيل التقرير
-            const mockData = [
-                { الترتيب: 1, المستخدم: 'أحمد محمد', 'النقاط اليوم': 86, المستوى: 'متقدم', 'تيك توك': 32, إنستغرام: 25, 'منصة إكس': 15, فيسبوك: 14 },
-                { الترتيب: 2, المستخدم: 'سارة علي', 'النقاط اليوم': 52, المستوى: 'متوسط', 'تيك توك': 18, إنستغرام: 20, 'منصة إكس': 8, فيسبوك: 6 },
-                { الترتيب: 3, المستخدم: 'محمد عبدالله', 'النقاط اليوم': 36, المستوى: 'متوسط', 'تيك توك': 12, إنستغرام: 10, 'منصة إكس': 9, فيسبوك: 5 },
-                { الترتيب: 4, المستخدم: 'أنت', 'النقاط اليوم': 24, المستوى: 'مبتدئ', 'تيك توك': 8, إنستغرام: 7, 'منصة إكس': 5, فيسبوك: 4 },
-                { الترتيب: 5, المستخدم: 'خالد عمر', 'النقاط اليوم': 18, المستوى: 'مبتدئ', 'تيك توك': 5, إنستغرام: 6, 'منصة إكس': 4, فيسبوك: 3 },
-                { الترتيب: 6, المستخدم: 'فاطمة أحمد', 'النقاط اليوم': 15, المستوى: 'مبتدئ', 'تيك توك': 4, إنستغرام: 5, 'منصة إكس': 3, فيسبوك: 3 },
-                { الترتيب: 7, المستخدم: 'عبدالله محمد', 'النقاط اليوم': 12, المستوى: 'مبتدئ', 'تيك توك': 3, إنستغرام: 4, 'منصة إكس': 3, فيسبوك: 2 },
-                { الترتيب: 8, المستخدم: 'نورة سعيد', 'النقاط اليوم': 10, المستوى: 'مبتدئ', 'تيك توك': 3, إنستغرام: 3, 'منصة إكس': 2, فيسبوك: 2 }
+            // تحديث سجل الحضور
+            updateAttendanceIndicators(data.lastAttendance, data.attendanceStreak || 0);
+            
+            // تحديث حالة المنصات
+            updatePlatformsStatus(data.platforms);
+            
+            // إخفاء شاشة التحميل
+            elements.loadingScreen.classList.add('hidden');
+        }
+
+        // تحديث مؤشرات الحضور
+        function updateAttendanceIndicators(lastAttendance, streak) {
+            const days = ['أ', 'إ', 'ث', 'أ', 'خ', 'ج', 'س'];
+            const today = new Date();
+            const todayDay = today.getDay(); // 0 لأحد، 1 لاثنين، إلخ
+            
+            // إعادة تعيين المؤشرات
+            elements.attendanceIndicators.innerHTML = '';
+            
+            days.forEach((day, index) => {
+                const dayElement = document.createElement('div');
+                dayElement.className = `attendance-day bg-gray-200 dark:bg-gray-700 w-10 h-10 rounded-full flex items-center justify-center text-sm`;
+                dayElement.textContent = day;
+                
+                // إذا كان اليوم ضمن فترة الحضور
+                if (lastAttendance) {
+                    const lastAttendDate = lastAttendance.toDate();
+                    const diffDays = Math.floor((today - lastAttendDate) / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays <= 6 && index <= todayDay) {
+                        dayElement.className = `attendance-day bg-primary w-10 h-10 rounded-full flex items-center justify-center text-white`;
+                        dayElement.innerHTML = '<i class="fas fa-check text-sm"></i>';
+                    }
+                }
+                
+                elements.attendanceIndicators.appendChild(dayElement);
+            });
+            
+            elements.streakText.textContent = `متتالي: ${streak} أيام`;
+        }
+
+        // تحديث حالة المنصات
+        function updatePlatformsStatus(platforms) {
+            elements.platformsContainer.innerHTML = '';
+            
+            const platformConfig = [
+                { id: 'tiktok', name: 'تيك توك', icon: 'fab fa-tiktok', color: '' },
+                { id: 'instagram', name: 'إنستغرام', icon: 'fab fa-instagram', color: 'text-[#E1306C]' },
+                { id: 'twitter', name: 'منصة إكس', icon: 'fab fa-twitter', color: 'text-[#1DA1F2]' },
+                { id: 'facebook', name: 'فيسبوك', icon: 'fab fa-facebook', color: 'text-[#4267B2]' }
             ];
             
+            platformConfig.forEach(platform => {
+                const platformData = platforms[platform.id] || { total: 0, like: 0, share: 0, comment: 0 };
+                const lastUpdate = platformData.lastUpdate ? formatTimeAgo(platformData.lastUpdate.toDate()) : 'لم يتم التحديث بعد';
+                
+                const platformElement = document.createElement('div');
+                platformElement.className = 'border border-gray-200 dark:border-gray-700 rounded-lg p-3';
+                platformElement.innerHTML = `
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center">
+                            <i class="${platform.icon} ${platform.color} text-xl"></i>
+                            <span class="mr-2 font-medium">${platform.name}</span>
+                        </div>
+                        <span class="h-3 w-3 bg-green-500 rounded-full"></span>
+                    </div>
+                    <p class="text-xs text-gray-600 dark:text-gray-400">آخر تحديث: ${lastUpdate}</p>
+                    <p class="text-xs mt-1"><span class="text-green-500">+${platformData.today || 0}</span> نقطة اليوم</p>
+                `;
+                
+                elements.platformsContainer.appendChild(platformElement);
+            });
+        }
+
+        // جلب التفاعلات
+        async function fetchInteractions() {
+            if (!currentUser) return;
+            
             try {
+                const snapshot = await db.collection('interactions')
+                    .where('userId', '==', currentUser.uid)
+                    .orderBy('timestamp', 'desc')
+                    .limit(5)
+                    .get();
+                
+                elements.interactionsList.innerHTML = '';
+                
+                if (snapshot.empty) {
+                    elements.interactionsList.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="px-4 py-4 text-center text-sm text-gray-500 dark:text-gray-400">لا توجد تفاعلات مسجلة</td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                snapshot.forEach(doc => {
+                    const interaction = doc.data();
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50 dark:hover:bg-gray-700';
+                    row.innerHTML = `
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${formatDate(interaction.timestamp.toDate())}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm">${getPlatformName(interaction.platform)}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm">${getInteractionType(interaction.type)}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-primary font-medium">+${interaction.points}</td>
+                    `;
+                    elements.interactionsList.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error fetching interactions:', error);
+            }
+        }
+
+        // جلب الإشعارات
+        async function fetchNotifications() {
+            if (!currentUser) return;
+            
+            try {
+                const snapshot = await db.collection('notifications')
+                    .where('userId', '==', currentUser.uid)
+                    .orderBy('timestamp', 'desc')
+                    .limit(10)
+                    .get();
+                
+                elements.notificationsList.innerHTML = '';
+                let unreadCount = 0;
+                
+                if (snapshot.empty) {
+                    elements.notificationsList.innerHTML = `
+                        <div class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400">لا توجد إشعارات</div>
+                    `;
+                    return;
+                }
+                
+                snapshot.forEach(doc => {
+                    const notification = doc.data();
+                    const notificationElement = document.createElement('div');
+                    notificationElement.className = `px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${!notification.read ? 'notification-unread bg-blue-50 dark:bg-blue-900/20' : ''}`;
+                    notificationElement.innerHTML = `
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 pt-0.5">
+                                <div class="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center">
+                                    <i class="fas fa-bell text-sm"></i>
+                                </div>
+                            </div>
+                            <div class="mr-3 flex-1">
+                                <p class="text-sm font-medium">${notification.title}</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">${notification.message}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">${formatTimeAgo(notification.timestamp.toDate())}</p>
+                            </div>
+                            ${!notification.read ? '<span class="h-2 w-2 rounded-full bg-primary"></span>' : ''}
+                        </div>
+                    `;
+                    
+                    notificationElement.addEventListener('click', () => {
+                        if (!notification.read) {
+                            markNotificationAsRead(doc.id);
+                        }
+                    });
+                    
+                    elements.notificationsList.appendChild(notificationElement);
+                    
+                    if (!notification.read) {
+                        unreadCount++;
+                    }
+                });
+                
+                // تحديث عداد الإشعارات غير المقروءة
+                if (unreadCount > 0) {
+                    elements.notificationsCount.textContent = unreadCount;
+                    elements.notificationsCount.classList.remove('hidden');
+                    elements.newNotificationsBadge.textContent = unreadCount;
+                    elements.newNotificationsBadge.classList.remove('hidden');
+                } else {
+                    elements.notificationsCount.classList.add('hidden');
+                    elements.newNotificationsBadge.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error fetching notifications:', error);
+            }
+        }
+
+        // تسجيل الحضور
+        async function markAttendance() {
+            if (!currentUser) return;
+            
+            try {
+                const now = new Date();
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                
+                // التحقق مما إذا كان المستخدم قد سجل حضوره اليوم
+                const userDoc = await db.collection('users').doc(currentUser.uid).get();
+                const userData = userDoc.data();
+                
+                if (userData.lastAttendance) {
+                    const lastAttendDate = userData.lastAttendance.toDate();
+                    const lastAttendDay = new Date(lastAttendDate.getFullYear(), lastAttendDate.getMonth(), lastAttendDate.getDate());
+                    
+                    if (lastAttendDay.getTime() === today.getTime()) {
+                        showNotification('لقد سجلت حضورك اليوم بالفعل!', 'info');
+                        return;
+                    }
+                }
+                
+                // حساب المتتالية
+                let streak = userData.attendanceStreak || 0;
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                
+                if (userData.lastAttendance) {
+                    const lastAttendDate = userData.lastAttendance.toDate();
+                    const lastAttendDay = new Date(lastAttendDate.getFullYear(), lastAttendDate.getMonth(), lastAttendDate.getDate());
+                    
+                    if (lastAttendDay.getTime() === yesterday.getTime()) {
+                        streak++;
+                    } else {
+                        streak = 1;
+                    }
+                } else {
+                    streak = 1;
+                }
+                
+                // إضافة النقاط
+                const pointsToAdd = 10 + (streak * 2); // 10 نقاط أساسية + 2 لكل يوم متتالي
+                
+                await db.collection('users').doc(currentUser.uid).update({
+                    points: firebase.firestore.FieldValue.increment(pointsToAdd),
+                    lastAttendance: firebase.firestore.FieldValue.serverTimestamp(),
+                    attendanceStreak: streak
+                });
+                
+                // تسجيل التفاعل
+                await db.collection('interactions').add({
+                    userId: currentUser.uid,
+                    type: 'attendance',
+                    points: pointsToAdd,
+                    platform: 'system',
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // إرسال إشعار
+                await db.collection('notifications').add({
+                    userId: currentUser.uid,
+                    title: 'حضور اليوم',
+                    message: `لقد حصلت على ${pointsToAdd} نقطة لتسجيل حضورك اليوم!`,
+                    read: false,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                showNotification(`تم تسجيل حضورك اليوم! (+${pointsToAdd} نقطة)`);
+                fetchUserData();
+            } catch (error) {
+                console.error('Error marking attendance:', error);
+                showNotification('حدث خطأ أثناء تسجيل الحضور', 'error');
+            }
+        }
+
+        // التحديث اليدوي للنقاط
+        async function manualUpdatePoints() {
+            if (!currentUser) return;
+            
+            try {
+                elements.manualUpdateBtn.disabled = true;
+                elements.manualUpdateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> جاري التحديث';
+                
+                // استدعاء دالة Firebase لتحديث النقاط
+                const updatePoints = functions.httpsCallable('updateUserPoints');
+                const result = await updatePoints({ userId: currentUser.uid });
+                
+                showNotification('تم تحديث النقاط بنجاح!');
+                fetchUserData();
+            } catch (error) {
+                console.error('Error updating points:', error);
+                showNotification('حدث خطأ أثناء تحديث النقاط', 'error');
+            } finally {
+                elements.manualUpdateBtn.disabled = false;
+                elements.manualUpdateBtn.textContent = 'تحديث الآن';
+            }
+        }
+
+        // تصدير إلى Excel
+        async function exportToExcel() {
+            if (!currentUser) return;
+            
+            try {
+                showNotification('جاري إنشاء التقرير...');
+                
+                // استدعاء دالة Firebase للحصول على بيانات التقرير
+                const getReportData = functions.httpsCallable('getUserReportData');
+                const result = await getReportData({ userId: currentUser.uid });
+                const data = result.data.interactions;
+                
+                if (!data || data.length === 0) {
+                    showNotification('لا توجد بيانات متاحة للتقرير', 'info');
+                    return;
+                }
+                
+                // تحويل البيانات إلى تنسيق Excel
+                const reportData = data.map(interaction => ({
+                    'التاريخ': formatDate(interaction.timestamp.toDate()),
+                    'المنصة': getPlatformName(interaction.platform),
+                    'نوع التفاعل': getInteractionType(interaction.type),
+                    'النقاط': interaction.points
+                }));
+                
                 // إنشاء ورقة عمل
-                const worksheet = XLSX.utils.json_to_sheet(mockData);
-                
-                // إنشاء مصنف (workbook)
+                const worksheet = XLSX.utils.json_to_sheet(reportData);
                 const workbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(workbook, worksheet, "المتفاعلين");
+                XLSX.utils.book_append_sheet(workbook, worksheet, "التفاعلات");
                 
-                // تصدير المصنف
-                XLSX.writeFile(workbook, `${reportName}.xlsx`);
+                // تصدير الملف
+                XLSX.writeFile(workbook, `تقرير_التفاعلات_${formatDate(new Date(), true)}.xlsx`);
                 
                 showNotification('تم تصدير التقرير بنجاح!');
             } catch (error) {
-                console.error('خطأ في تصدير الملف:', error);
-                showNotification('حدث خطأ أثناء تصدير التقرير.', 'error');
+                console.error('Error exporting report:', error);
+                showNotification('حدث خطأ أثناء إنشاء التقرير', 'error');
             }
         }
-        
-        // إضافة إشعارات نموذجية
-        function populateNotifications() {
-            const notificationsList = document.getElementById('notifications-list');
-            
-            // تفريغ القائمة أولا
-            notificationsList.innerHTML = '';
-            
-            // إضافة إشعارات نموذجية
-            const notifications = [
-                { title: 'تم التحقق من حسابك', message: 'تم التحقق من حساب تيك توك الخاص بك بنجاح.', time: 'منذ 5 دقائق', unread: true },
-                { title: 'نقاط جديدة', message: 'تم إضافة 15 نقطة من تفاعلات إنستغرام.', time: 'منذ 30 دقيقة', unread: true },
-                { title: 'تحديث تلقائي', message: 'تم تحديث بياناتك تلقائيًا من جميع المنصات.', time: 'منذ ساعة', unread: true },
-                { title: 'تقرير جديد', message: 'تم إنشاء تقرير المتفاعلين اليومي.', time: 'منذ 5 ساعات', unread: false },
-                { title: 'تحديث النظام', message: 'تم تحديث نظام تتبع النقاط إلى الإصدار الأحدث.', time: 'أمس', unread: false }
-            ];
-            
-            notifications.forEach(notif => {
-                const notificationItem = document.createElement('div');
-                notificationItem.className = `px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${notif.unread ? 'notification-unread bg-blue-50 dark:bg-blue-900/20' : ''}`;
-                
-                notificationItem.innerHTML = `
-                    <div class="flex items-start">
-                        <div class="flex-shrink-0 pt-0.5">
-                            <div class="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center">
-                                <i class="fas fa-bell text-sm"></i>
-                            </div>
-                        </div>
-                        <div class="mr-3 flex-1">
-                            <p class="text-sm font-medium">${notif.title}</p>
-                            <p class="text-xs text-gray-600 dark:text-gray-400">${notif.message}</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">${notif.time}</p>
-                        </div>
-                        ${notif.unread ? '<span class="h-2 w-2 rounded-full bg-primary"></span>' : ''}
-                    </div>
-                `;
-                
-                notificationsList.appendChild(notificationItem);
-                
-                // إضافة مستمع حدث للنقر على الإشعار
-                notificationItem.addEventListener('click', function() {
-                    this.classList.remove('notification-unread', 'bg-blue-50', 'dark:bg-blue-900/20');
-                    const indicator = this.querySelector('.bg-primary.rounded-full');
-                    if (indicator) {
-                        indicator.remove();
-                    }
+
+        // تعليم الإشعار كمقروء
+        async function markNotificationAsRead(notificationId) {
+            try {
+                await db.collection('notifications').doc(notificationId).update({
+                    read: true
                 });
-            });
-        }
-        
-        // إضافة إشعار جديد
-        function addNewNotification(title, message) {
-            // تفعيل مؤشر الإشعارات الجديدة
-            document.getElementById('notifications-count').classList.remove('hidden');
-            document.getElementById('new-notifications-badge').classList.remove('hidden');
-            
-            // إضافة الإشعار إلى القائمة إذا كانت مفتوحة
-            const notificationsList = document.getElementById('notifications-list');
-            if (notificationsList.innerHTML !== '') {
-                const notificationItem = document.createElement('div');
-                notificationItem.className = 'notification-unread bg-blue-50 dark:bg-blue-900/20 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer';
-                
-                notificationItem.innerHTML = `
-                    <div class="flex items-start">
-                        <div class="flex-shrink-0 pt-0.5">
-                            <div class="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center">
-                                <i class="fas fa-bell text-sm"></i>
-                            </div>
-                        </div>
-                        <div class="mr-3 flex-1">
-                            <p class="text-sm font-medium">${title}</p>
-                            <p class="text-xs text-gray-600 dark:text-gray-400">${message}</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">الآن</p>
-                        </div>
-                        <span class="h-2 w-2 rounded-full bg-primary"></span>
-                    </div>
-                `;
-                
-                notificationsList.prepend(notificationItem);
+                fetchNotifications();
+            } catch (error) {
+                console.error('Error marking notification as read:', error);
             }
         }
-        
-        // دالة لعرض الإشعارات
+
+        // تعليم كل الإشعارات كمقروءة
+        async function markAllNotificationsAsRead() {
+            if (!currentUser) return;
+            
+            try {
+                const snapshot = await db.collection('notifications')
+                    .where('userId', '==', currentUser.uid)
+                    .where('read', '==', false)
+                    .get();
+                
+                const batch = db.batch();
+                snapshot.forEach(doc => {
+                    batch.update(doc.ref, { read: true });
+                });
+                
+                await batch.commit();
+                fetchNotifications();
+                showNotification('تم تعيين جميع الإشعارات كمقروءة');
+            } catch (error) {
+                console.error('Error marking all notifications as read:', error);
+                showNotification('حدث خطأ أثناء تعيين الإشعارات كمقروءة', 'error');
+            }
+        }
+
+        // عرض/إخفاء قائمة الإشعارات
+        function toggleNotificationsMenu() {
+            elements.notificationsMenu.classList.toggle('hidden');
+            if (!elements.notificationsMenu.classList.contains('hidden')) {
+                fetchNotifications();
+            }
+        }
+
+        // وظائف مساعدة
         function showNotification(message, type = 'success') {
             const notification = document.createElement('div');
-            notification.className = `px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-500 ease-in-out opacity-0 fixed top-4 left-1/2 transform -translate-x-1/2`;
-            
-            if (type === 'error') {
-                notification.classList.add('bg-red-500', 'text-white');
-            } else {
-                notification.classList.add('bg-green-500', 'text-white');
-            }
-            
+            notification.className = `px-4 py-2 mb-2 rounded-lg shadow-lg text-sm font-medium ${type === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : type === 'error' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'}`;
             notification.textContent = message;
-            document.getElementById('notification-container').appendChild(notification);
             
-            // إظهار الإشعار
-            setTimeout(() => {
-                notification.classList.remove('opacity-0');
-                notification.classList.add('opacity-100');
-            }, 100);
+            elements.notificationContainer.appendChild(notification);
             
-            // إزالة الإشعار بعد فترة
             setTimeout(() => {
-                notification.classList.remove('opacity-100');
-                notification.classList.add('opacity-0');
+                notification.classList.add('opacity-0', 'transition-opacity', 'duration-300');
                 setTimeout(() => {
                     notification.remove();
-                }, 500);
+                }, 300);
             }, 3000);
         }
-        
-        // إظهار رسائل الخطأ في نماذج التسجيل
-        function showError(elementId, message) {
-            const errorElement = document.getElementById(elementId);
-            errorElement.textContent = message;
-            errorElement.classList.remove('hidden');
+
+        function showError(element, message) {
+            element.textContent = message;
+            element.classList.remove('hidden');
         }
-        
-        // تحديث معلومات المستخدم في القائمة
-        function updateUserInfo(user) {
-            if (user) {
-                document.getElementById('user-name').textContent = user.displayName || 'المستخدم';
-                document.getElementById('user-email').textContent = user.email || '';
+
+        function getAuthErrorMessage(error) {
+            switch (error.code) {
+                case 'auth/invalid-email':
+                    return 'البريد الإلكتروني غير صحيح';
+                case 'auth/user-disabled':
+                    return 'هذا الحساب معطل';
+                case 'auth/user-not-found':
+                    return 'لا يوجد حساب مرتبط بهذا البريد الإلكتروني';
+                case 'auth/wrong-password':
+                    return 'كلمة المرور غير صحيحة';
+                case 'auth/email-already-in-use':
+                    return 'هذا البريد الإلكتروني مستخدم بالفعل';
+                case 'auth/weak-password':
+                    return 'كلمة المرور ضعيفة (يجب أن تكون 6 أحرف على الأقل)';
+                case 'auth/operation-not-allowed':
+                    return 'طريقة التسجيل هذه غير مسموح بها';
+                case 'auth/too-many-requests':
+                    return 'تم إجراء محاولات تسجيل دخول كثيرة جدًا. يرجى المحاولة لاحقًا';
+                default:
+                    return 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى';
             }
         }
-        
-        // سيتم استدعاؤه بعد تسجيل الدخول
-        function initializeApp() {
-            console.log('تم تهيئة التطبيق');
+
+        function formatDate(date, forFileName = false) {
+            if (forFileName) {
+                return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+            }
             
-            // محاكاة إشعارات دورية
-            setInterval(() => {
-                // فرصة عشوائية 20% لإضافة إشعار
-                if (Math.random() < 0.2) {
-                    const notifications = [
-                        { title: 'نقاط جديدة', message: `تم إضافة ${Math.floor(Math.random() * 5) + 1} نقاط من تفاعلات تيك توك.` },
-                        { title: 'نشاط جديد', message: 'تم اكتشاف تفاعلات جديدة على حسابك.' },
-                        { title: 'تحديث تلقائي', message: 'تم تحديث البيانات تلقائيًا من جميع المنصات.' }
-                    ];
-                    
-                    const randomNotif = notifications[Math.floor(Math.random() * notifications.length)];
-                    addNewNotification(randomNotif.title, randomNotif.message);
-                }
-            }, 30000); // كل 30 ثانية للعرض، يمكن تغييره إلى فترة أطول
+            const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+            return date.toLocaleDateString('ar-SA', options);
         }
-        
-        // التعامل مع تسجيل الدخول لأغراض العرض
-        setTimeout(() => {
-            // محاكاة تسجيل الدخول
-            document.getElementById('login-btn')?.addEventListener('click', () => {
-                const email = document.getElementById('email').value;
-                const password = document.getElementById('password').value;
-                
-                if (!email || !password) {
-                    showError('login-error', 'يرجى إدخال البريد الإلكتروني وكلمة المرور');
-                    return;
-                }
-                
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('main-app').classList.remove('hidden');
-                
-                updateUserInfo({
-                    displayName: 'أحمد محمد',
-                    email: email || 'user@example.com'
-                });
-                
-                initializeApp();
-                showNotification('تم تسجيل الدخول بنجاح!');
-            });
+
+        function formatTimeAgo(date) {
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
             
-            // محاكاة التسجيل
-            document.getElementById('register-btn')?.addEventListener('click', () => {
-                const name = document.getElementById('reg-name')?.value;
-                const email = document.getElementById('reg-email')?.value;
-                const password = document.getElementById('reg-password')?.value;
-                
-                if (!name || !email || !password) {
-                    showError('register-error', 'يرجى إكمال جميع الحقول');
-                    return;
-                }
-                
-                document.getElementById('register-screen').classList.add('hidden');
-                document.getElementById('main-app').classList.remove('hidden');
-                
-                updateUserInfo({
-                    displayName: name,
-                    email: email
-                });
-                
-                initializeApp();
-                showNotification('تم إنشاء الحساب بنجاح!');
-            });
-        }, 500);
-   </script>
-    <script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+            if (diffMins < 1) return 'الآن';
+            if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
+            
+            const diffHours = Math.floor(diffMins / 60);
+            if (diffHours < 24) return `منذ ${diffHours} ساعة`;
+            
+            const diffDays = Math.floor(diffHours / 24);
+            if (diffDays < 7) return `منذ ${diffDays} يوم`;
+            
+            return formatDate(date);
+        }
 
-  // Your web app's Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyAkzXjpu0KMd8S_bIYKMV0X614NftI-FhU",
-    authDomain: "nosra-plus.firebaseapp.com",
-    projectId: "nosra-plus",
-    storageBucket: "nosra-plus.firebasestorage.app",
-    messagingSenderId: "838717853309",
-    appId: "1:838717853309:web:d4dbd7b26cddf89e36ab14"
-  };
+        function getPlatformName(platform) {
+            switch (platform) {
+                case 'tiktok': return 'تيك توك';
+                case 'instagram': return 'إنستغرام';
+                case 'twitter': return 'منصة إكس';
+                case 'facebook': return 'فيسبوك';
+                default: return platform;
+            }
+        }
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-</script>
+        function getInteractionType(type) {
+            switch (type) {
+                case 'like': return 'إعجاب';
+                case 'share': return 'مشاركة';
+                case 'comment': return 'تعليق';
+                case 'attendance': return 'حضور';
+                default: return type;
+            }
+        }
+
+        // تهيئة التطبيق عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                elements.loadingScreen.classList.add('hidden');
+            }, 1000);
+        });
+    </script>
 </body>
 </html>
