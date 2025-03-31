@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام تتبع نقاط التواصل الاجتماعي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D5CDE',
+                    }
+                }
+            }
+        };
+
+        // تطبيق الوضع المظلم حسب تفضيلات المستخدم
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+    </script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- إضافة مكتبة لتصدير ملفات إكسل -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body class="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen">
+    <!-- نافذة التحميل -->
+    <div id="loading-screen" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex flex-col items-center justify-center">
+        <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mb-4"></div>
+        <h2 class="text-xl font-semibold">جاري التحميل...</h2>
+    </div>
+
+    <!-- التنبيهات -->
+    <div id="notification-container" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50"></div>
+
+    <div class="container mx-auto px-4 py-8 pb-20">
+        <!-- شاشة تسجيل الدخول -->
+        <div id="login-screen" class="hidden flex flex-col items-center justify-center min-h-[80vh]">
+            <div class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md">
+                <div class="text-center mb-6">
+                    <h1 class="text-3xl font-bold text-primary">مؤثر <span class="text-gray-600 dark:text-gray-400">+</span></h1>
+                    <p class="text-gray-600 dark:text-gray-400 mt-2">منصة تتبع نقاط التواصل الاجتماعي</p>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="email" class="block text-sm font-medium mb-1">البريد الإلكتروني</label>
+                    <input type="email" id="email" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700" placeholder="أدخل بريدك الإلكتروني">
+                </div>
+                <div class="mb-6">
+                    <label for="password" class="block text-sm font-medium mb-1">كلمة المرور</label>
+                    <input type="password" id="password" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700" placeholder="أدخل كلمة المرور">
+                </div>
+
+                <div id="login-error" class="hidden mb-4 p-3 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-lg text-sm"></div>
+                
+                <button id="login-btn" class="w-full bg-primary hover:bg-opacity-90 text-white py-2 px-4 rounded-lg transition-all">تسجيل الدخول</button>
+                
+                <div class="my-4 flex items-center">
+                    <div class="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+                    <span class="mx-3 text-sm text-gray-500 dark:text-gray-400">أو</span>
+                    <div class="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+                </div>
+                
+                <button id="google-login" class="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2 px-4 rounded-lg flex items-center justify-center mb-2">
+                    <i class="fab fa-google text-red-500 mr-2"></i> تسجيل الدخول باستخدام جوجل
+                </button>
+                
+                <p class="text-center mt-4 text-sm">ليس لديك حساب؟ <button id="show-register" class="text-primary">إنشاء حساب جديد</button></p>
+            </div>
+        </div>
+
+        <!-- شاشة إنشاء حساب -->
+        <div id="register-screen" class="hidden flex flex-col items-center justify-center min-h-[80vh]">
+            <div class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md">
+                <div class="text-center mb-6">
+                    <h1 class="text-3xl font-bold text-primary">مؤثر <span class="text-gray-600 dark:text-gray-400">+</span></h1>
+                    <p class="text-gray-600 dark:text-gray-400 mt-2">إنشاء حساب جديد</p>
+                </div>
+
+                <div class="mb-4">
+                    <label for="reg-name" class="block text-sm font-medium mb-1">الاسم</label>
+                    <input type="text" id="reg-name" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700" placeholder="أدخل اسمك">
+                </div>
+                <div class="mb-4">
+                    <label for="reg-email" class="block text-sm font-medium mb-1">البريد الإلكتروني</label>
+                    <input type="email" id="reg-email" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700" placeholder="أدخل بريدك الإلكتروني">
+                </div>
+                <div class="mb-4">
+                    <label for="reg-password" class="block text-sm font-medium mb-1">كلمة المرور</label>
+                    <input type="password" id="reg-password" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700" placeholder="أدخل كلمة المرور (8 أحرف على الأقل)">
+                </div>
+
+                <div id="register-error" class="hidden mb-4 p-3 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-lg text-sm"></div>
+                
+                <button id="register-btn" class="w-full bg-primary hover:bg-opacity-90 text-white py-2 px-4 rounded-lg transition-all">إنشاء حساب</button>
+                
+                <p class="text-center mt-4 text-sm">لديك حساب بالفعل؟ <button id="show-login" class="text-primary">تسجيل الدخول</button></p>
+            </div>
+        </div>
+
+        <!-- الشاشة الرئيسية -->
+        <div id="main-app" class="hidden">
+            <!-- قائمة الإشعارات الجديدة (تظهر عند وجود إشعارات) -->
+            <div id="new-notifications-badge" class="hidden fixed top-4 right-4 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow-lg z-20">3</div>
+
+            <!-- الرأس -->
+            <header class="mb-6">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-2xl md:text-3xl font-bold text-primary">مؤثر <span class="text-gray-600 dark:text-gray-400">+</span></h1>
+                    <div class="flex items-center gap-3">
+                        <button id="attendance-btn" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm rounded-lg transition-all flex items-center">
+                            <i class="fas fa-check-circle mr-1"></i>
+                            <span>تسجيل الحضور</span>
+                        </button>
+                        <div class="relative">
+                            <button id="notifications-btn" class="relative bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-full w-9 h-9 flex items-center justify-center">
+                                <i class="far fa-bell"></i>
+                                <span id="notifications-count" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hidden">3</span>
+                            </button>
+                            <div id="notifications-menu" class="hidden absolute left-0 mt-2 w-80 rounded-md shadow-lg py-1 bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-10 max-h-96 overflow-y-auto">
+                                <div class="px-4 py-2 text-sm border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                                    <span class="font-semibold">الإشعارات</span>
+                                    <button id="mark-all-read" class="text-primary text-xs hover:underline">تعيين الكل كمقروء</button>
+                                </div>
+                                <div id="notifications-list">
+                                    <!-- ستتم إضافة الإشعارات هنا ديناميكيًا -->
+                                </div>
+                                <div class="border-t border-gray-200 dark:border-gray-700 px-4 py-2 text-center">
+                                    <a href="#notifications" class="text-primary text-sm hover:underline">عرض كل الإشعارات</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="relative">
+                            <button id="user-menu-btn" class="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-full w-9 h-9 flex items-center justify-center">
+                                <i class="fas fa-user"></i>
+                            </button>
+                            <div id="user-menu" class="hidden absolute left-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-10">
+                                <div class="px-4 py-2 text-sm text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700">
+                                    <div id="user-name" class="font-semibold">اسم المستخدم</div>
+                                    <div id="user-email" class="text-xs text-gray-500 dark:text-gray-400">example@email.com</div>
+                                </div>
+                                <a href="#profile" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <i class="fas fa-user-circle mr-2"></i> الملف الشخصي
+                                </a>
+                                <a href="#settings" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <i class="fas fa-cog mr-2"></i> الإعدادات
+                                </a>
+                                <button id="logout-btn" class="w-full text-right px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <i class="fas fa-sign-out-alt mr-2"></i> تسجيل الخروج
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-gray-600 dark:text-gray-400 mt-2 text-sm">تتبع نقاطك من جميع منصات التواصل الاجتماعي</p>
+            </header>
+
+            <!-- القسم الرئيسي -->
+            <main>
+                <!-- ملخص النقاط -->
+                <section class="mb-6 bg-gray-100 dark:bg-gray-800 rounded-xl p-4 md:p-6 shadow-md">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <h2 class="text-lg md:text-xl font-bold mb-4">ملخص نقاطك</h2>
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center">
+                                    <div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white">
+                                        <span id="total-points" class="text-xl">758</span>
+                                    </div>
+                                    <div class="mr-4">
+                                        <p class="font-bold text-sm md:text-base">مجموع النقاط</p>
+                                        <p id="last-update" class="text-xs text-gray-600 dark:text-gray-400">آخر تحديث تلقائي: منذ 5 دقائق</p>
+                                    </div>
+                                </div>
+                                <div id="today-points" class="text-green-500 bg-green-100 dark:bg-green-900 px-2 py-1 rounded-full text-xs md:text-sm">
+                                    +24 اليوم
+                                </div>
+                            </div>
+                            
+                            <div class="my-4">
+                                <div class="h-1 w-full bg-gray-300 dark:bg-gray-700 rounded">
+                                    <div id="level-progress" class="h-1 bg-primary rounded" style="width: 75%"></div>
+                                </div>
+                                <div class="flex justify-between text-xs mt-1">
+                                    <p id="level-text" class="text-gray-600 dark:text-gray-400">758 / 1000 للمستوى التالي</p>
+                                    <p id="user-level" class="text-gray-600 dark:text-gray-400">المستوى: 7</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-col justify-center">
+                            <div class="mb-2 text-sm font-medium">سجل الحضور الأسبوعي:</div>
+                            <div id="attendance-indicators" class="flex flex-wrap gap-2 md:gap-3 justify-center md:justify-start">
+                                <div class="attendance-day bg-primary w-10 h-10 rounded-full flex items-center justify-center text-white"><i class="fas fa-check text-sm"></i></div>
+                                <div class="attendance-day bg-primary w-10 h-10 rounded-full flex items-center justify-center text-white"><i class="fas fa-check text-sm"></i></div>
+                                <div class="attendance-day bg-primary w-10 h-10 rounded-full flex items-center justify-center text-white"><i class="fas fa-check text-sm"></i></div>
+                                <div class="attendance-day bg-primary w-10 h-10 rounded-full flex items-center justify-center text-white"><i class="fas fa-check text-sm"></i></div>
+                                <div class="attendance-day bg-primary w-10 h-10 rounded-full flex items-center justify-center text-white"><i class="fas fa-check text-sm"></i></div>
+                                <div class="attendance-day bg-primary w-10 h-10 rounded-full flex items-center justify-center text-white"><i class="fas fa-check text-sm"></i></div>
+                                <div class="attendance-day bg-gray-200 dark:bg-gray-700 w-10 h-10 rounded-full flex items-center justify-center text-sm">س</div>
+                            </div>
+                            <p id="streak-text" class="text-center md:text-right text-xs mt-2 text-gray-600 dark:text-gray-400">متتالي: 6 أيام</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- حالة الربط التلقائي -->
+                <section class="mb-6 bg-white dark:bg-gray-800 rounded-xl p-4 md:p-6 shadow-md">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg md:text-xl font-bold">تجميع النقاط التلقائي</h2>
+                        <span class="bg-green-500 text-white text-xs px-2 py-1 rounded-full">مفعل</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                        <!-- حالة تيك توك -->
+                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center">
+                                    <i class="fab fa-tiktok text-xl"></i>
+                                    <span class="mr-2 font-medium">تيك توك</span>
+                                </div>
+                                <span class="h-3 w-3 bg-green-500 rounded-full"></span>
+                            </div>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">آخر تحديث: منذ 3 دقائق</p>
+                            <p class="text-xs mt-1"><span class="text-green-500">+12</span> نقطة اليوم</p>
+                        </div>
+
+                        <!-- حالة إنستغرام -->
+                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center">
+                                    <i class="fab fa-instagram text-xl text-[#E1306C]"></i>
+                                    <span class="mr-2 font-medium">إنستغرام</span>
+                                </div>
+                                <span class="h-3 w-3 bg-green-500 rounded-full"></span>
+                            </div>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">آخر تحديث: منذ 5 دقائق</p>
+                            <p class="text-xs mt-1"><span class="text-green-500">+7</span> نقطة اليوم</p>
+                        </div>
+
+                        <!-- حالة منصة إكس -->
+                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center">
+                                    <i class="fab fa-twitter text-xl text-[#1DA1F2]"></i>
+                                    <span class="mr-2 font-medium">منصة إكس</span>
+                                </div>
+                                <span class="h-3 w-3 bg-green-500 rounded-full"></span>
+                            </div>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">آخر تحديث: منذ 8 دقائق</p>
+                            <p class="text-xs mt-1"><span class="text-green-500">+3</span> نقطة اليوم</p>
+                        </div>
+
+                        <!-- حالة فيسبوك -->
+                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center">
+                                    <i class="fab fa-facebook text-xl text-[#4267B2]"></i>
+                                    <span class="mr-2 font-medium">فيسبوك</span>
+                                </div>
+                                <span class="h-3 w-3 bg-green-500 rounded-full"></span>
+                            </div>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">آخر تحديث: منذ 10 دقائق</p>
+                            <p class="text-xs mt-1"><span class="text-green-500">+2</span> نقطة اليوم</p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                        <div class="flex items-center">
+                            <i class="fas fa-sync-alt text-blue-600 dark:text-blue-400 mr-2"></i>
+                            <div>
+                                <p class="text-sm text-blue-800 dark:text-blue-300 font-medium">تحديث تلقائي كل 15 دقيقة</p>
+                                <p class="text-xs text-blue-600 dark:text-blue-400">التحديث التالي بعد: 10 دقائق</p>
+                            </div>
+                        </div>
+                        <button id="manual-refresh" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-all">
+                            تحديث الآن
+                        </button>
+                    </div>
+                </section>
+
+                <!-- تصدير التقارير -->
+                <section class="mb-6 bg-white dark:bg-gray-800 rounded-xl p-4 md:p-6 shadow-md">
+                    <h2 class="text-lg md:text-xl font-bold mb-4">تقارير المتفاعلين</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                            <div class="flex items-center mb-3">
+                                <i class="fas fa-file-excel text-green-600 dark:text-green-500 text-2xl mr-3"></i>
+                                <div>
+                                    <h3 class="font-bold">تقرير المتفاعلين اليومي</h3>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400">يتم إنشاؤه تلقائيًا كل يوم في الساعة 12 صباحًا</p>
+                                </div>
+                            </div>
+                            <div class="flex justify-between">
+                                <div class="text-sm">آخر تحديث: <span class="text-gray-600 dark:text-gray-400">اليوم 00:05</span></div>
+                                <button id="export-daily" class="text-primary hover:text-primary/80 text-sm flex items-center">
+                                    <i class="fas fa-download mr-1"></i> تحميل
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                            <div class="flex items-center mb-3">
+                                <i class="fas fa-file-excel text-green-600 dark:text-green-500 text-2xl mr-3"></i>
+                                <div>
+                                    <h3 class="font-bold">تقرير المتفاعلين الأسبوعي</h3>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400">يتم إنشاؤه تلقائيًا كل يوم أحد</p>
+                                </div>
+                            </div>
+                            <div class="flex justify-between">
+                                <div class="text-sm">آخر تحديث: <span class="text-gray-600 dark:text-gray-400">20/06/2023</span></div>
+                                <button id="export-weekly" class="text-primary hover:text-primary/80 text-sm flex items-center">
+                                    <i class="fas fa-download mr-1"></i> تحميل
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button id="custom-report" class="flex items-center text-sm text-primary hover:text-primary/80">
+                            <i class="fas fa-plus-circle mr-1"></i> إنشاء تقرير مخصص
+                        </button>
+                    </div>
+                </section>
+
+                <!-- تفاصيل النقاط حسب المنصة -->
+                <section class="mb-6">
+                    <h2 class="text-lg md:text-xl font-bold mb-4">إحصائيات المنصات</h2>
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- تيك توك -->
+                        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow border-t-4 border-[#000000] dark:border-[#25F4EE]">
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center">
+                                    <i class="fab fa-tiktok text-xl"></i>
+                                    <span class="mr-2 font-medium">تيك توك</span>
+                                </div>
+                                <span id="platform-tiktok-total" class="text-lg font-bold">324</span>
+                            </div>
+                            <div class="mt-3">
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span>لايك</span>
+                                    <span id="platform-tiktok-like">+143</span>
+                                </div>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span>مشاركة</span>
+                                    <span id="platform-tiktok-share">+95</span>
+                                </div>
+                                <div class="flex justify-between text-xs">
+                                    <span>تعليق</span>
+                                    <span id="platform-tiktok-comment">+86</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- إنستغرام -->
+                        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow border-t-4 border-[#E1306C]">
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center">
+                                    <i class="fab fa-instagram text-xl"></i>
+                                    <span class="mr-2 font-medium">إنستغرام</span>
+                                </div>
+                                <span id="platform-instagram-total" class="text-lg font-bold">216</span>
+                            </div>
+                            <div class="mt-3">
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span>لايك</span>
+                                    <span id="platform-instagram-like">+87</span>
+                                </div>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span>مشاركة</span>
+                                    <span id="platform-instagram-share">+58</span>
+                                </div>
+                                <div class="flex justify-between text-xs">
+                                    <span>تعليق</span>
+                                    <span id="platform-instagram-comment">+71</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- منصة إكس -->
+                        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow border-t-4 border-[#1DA1F2]">
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center">
+                                    <i class="fab fa-twitter text-xl"></i>
+                                    <span class="mr-2 font-medium">منصة إكس</span>
+                                </div>
+                                <span id="platform-twitter-total" class="text-lg font-bold">134</span>
+                            </div>
+                            <div class="mt-3">
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span>لايك</span>
+                                    <span id="platform-twitter-like">+64</span>
+                                </div>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span>إعادة نشر</span>
+                                    <span id="platform-twitter-share">+35</span>
+                                </div>
+                                <div class="flex justify-between text-xs">
+                                    <span>ردود</span>
+                                    <span id="platform-twitter-comment">+35</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- فيسبوك -->
+                        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow border-t-4 border-[#4267B2]">
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center">
+                                    <i class="fab fa-facebook text-xl"></i>
+                                    <span class="mr-2 font-medium">فيسبوك</span>
+                                </div>
+                                <span id="platform-facebook-total" class="text-lg font-bold">84</span>
+                            </div>
+                            <div class="mt-3">
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span>لايك</span>
+                                    <span id="platform-facebook-like">+32</span>
+                                </div>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span>مشاركة</span>
+                                    <span id="platform-facebook-share">+28</span>
+                                </div>
+                                <div class="flex justify-between text-xs">
+                                    <span>تعليق</span>
+                                    <span id="platform-facebook-comment">+24</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- التصنيف اليومي -->
+                <section class="mb-16">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg md:text-xl font-bold">التصنيف اليومي</h2>
+                        <div class="text-sm">
+                            <span id="leaderboard-update" class="text-gray-500 dark:text-gray-400">آخر تحديث: منذ 5 دقائق</span>
+                            <button id="refresh-leaderboard" class="text-primary hover:text-primary/80 mr-2">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md">
+                        <div id="user-ranking" class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                            <div class="flex items-center">
+                                <div class="bg-primary text-white w-10 h-10 text-lg font-bold rounded-lg flex items-center justify-center ml-3">
+                                    <span id="user-rank">4</span>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-sm">أنت</p>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400"><span id="your-points">24</span> نقطة اليوم</p>
+                                </div>
+                            </div>
+                            <div>
+                                <span id="rank-change" class="text-green-500 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full text-xs">
+                                    +1 <i class="fas fa-arrow-up"></i>
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="overflow-hidden overflow-x-auto">
+                            <table class="min-w-full">
+                                <thead class="bg-gray-100 dark:bg-gray-700">
+                                    <tr>
+                                        <th class="py-2 px-3 text-right text-xs font-medium">#</th>
+                                        <th class="py-2 px-3 text-right text-xs font-medium">المستخدم</th>
+                                        <th class="py-2 px-3 text-right text-xs font-medium">النقاط اليوم</th>
+                                        <th class="py-2 px-3 text-right text-xs font-medium">المستوى</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="leaderboard" class="divide-y divide-gray-200 dark:divide-gray-700">
+                                    <tr class="bg-yellow-50 dark:bg-yellow-900/20">
+                                        <td class="py-3 px-3 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="bg-yellow-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">
+                                                    <span>1</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-3 whitespace-nowrap text-sm">أحمد محمد</td>
+                                        <td class="py-3 px-3 whitespace-nowrap text-sm font-bold">86</td>
+                                        <td class="py-3 px-3 whitespace-nowrap">
+                                            <span class="bg-purple-500 text-white text-xs px-2 py-1 rounded">متقدم</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="bg-gray-50 dark:bg-gray-800/50">
+                                        <td class="py-3 px-3 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="bg-gray-400 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">
+                                                    <span>2</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-3 whitespace-nowrap text-sm">سارة علي</td>
+                                        <td class="py-3 px-3 whitespace-nowrap text-sm font-bold">52</td>
+                                        <td class="py-3 px-3 whitespace-nowrap">
+                                            <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded">متوسط</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-3 px-3 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="bg-amber-700 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">
+                                                    <span>3</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-3 whitespace-nowrap text-sm">محمد عبدالله</td>
+                                        <td class="py-3 px-3 whitespace-nowrap text-sm font-bold">36</td>
+                                        <td class="py-3 px-3 whitespace-nowrap">
+                                            <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded">متوسط</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="bg-blue-50 dark:bg-blue-900/20">
+                                        <td class="py-3 px-3 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">
+                                                    <span>4</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-3 whitespace-nowrap text-sm font-bold">أنت</td>
+                                        <td class="py-3 px-3 whitespace-nowrap text-sm font-bold">24</td>
+                                        <td class="py-3 px-3 whitespace-nowrap">
+                                            <span class="bg-green-500 text-white text-xs px-2 py-1 rounded">مبتدئ</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-3 px-3 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 w-6 h-6 rounded-full flex items-center justify-center text-xs">
+                                                    <span>5</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-3 whitespace-nowrap text-sm">خالد عمر</td>
+                                        <td class="py-3 px-3 whitespace-nowrap text-sm font-bold">18</td>
+                                        <td class="py-3 px-3 whitespace-nowrap">
+                                            <span class="bg-green-500 text-white text-xs px-2 py-1 rounded">مبتدئ</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="p-3 text-center">
+                            <button id="show-more-btn" class="text-primary text-sm hover:underline">عرض المزيد...</button>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+
+        <!-- نموذج التقرير المخصص -->
+        <div id="custom-report-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold">إنشاء تقرير مخصص</h3>
+                    <button id="close-custom-report" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label for="report-type" class="block text-sm font-medium mb-1">نوع التقرير</label>
+                        <select id="report-type" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700">
+                            <option value="top-users">المتفاعلين الأكثر نشاطًا</option>
+                            <option value="platform-stats">إحصائيات المنصات</option>
+                            <option value="activity-log">سجل النشاط</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="report-date-range" class="block text-sm font-medium mb-1">نطاق التاريخ</label>
+                        <select id="report-date-range" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700">
+                            <option value="today">اليوم</option>
+                            <option value="yesterday">أمس</option>
+                            <option value="week">هذا الأسبوع</option>
+                            <option value="month">هذا الشهر</option>
+                            <option value="custom">مخصص</option>
+                        </select>
+                    </div>
+                    <div id="custom-date" class="hidden space-y-3">
+                        <div>
+                            <label for="start-date" class="block text-sm font-medium mb-1">من تاريخ</label>
+                            <input type="date" id="start-date" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700">
+                        </div>
+                        <div>
+                            <label for="end-date" class="block text-sm font-medium mb-1">إلى تاريخ</label>
+                            <input type="date" id="end-date" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="report-format" class="block text-sm font-medium mb-1">صيغة التقرير</label>
+                        <select id="report-format" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700">
+                            <option value="excel">Excel (.xlsx)</option>
+                            <option value="csv">CSV (.csv)</option>
+                            <option value="pdf">PDF (.pdf)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-6">
+                    <button id="generate-report" class="w-full bg-primary hover:bg-opacity-90 text-white py-2 px-4 rounded-lg transition-all">إنشاء التقرير</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- القائمة السفلية -->
+        <footer class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-lg border-t border-gray-200 dark:border-gray-700 z-10">
+            <div class="container mx-auto">
+                <div class="flex justify-around py-2">
+                    <button id="nav-home" class="flex flex-col items-center text-primary">
+                        <i class="fas fa-home text-lg"></i>
+                        <span class="text-xs mt-1">الرئيسية</span>
+                    </button>
+                    <button id="nav-stats" class="flex flex-col items-center text-gray-500 dark:text-gray-400">
+                        <i class="fas fa-chart-line text-lg"></i>
+                        <span class="text-xs mt-1">الإحصائيات</span>
+                    </button>
+                    <button id="nav-add" class="flex flex-col items-center text-gray-500 dark:text-gray-400">
+                        <i class="fas fa-plus-circle text-lg"></i>
+                        <span class="text-xs mt-1">إضافة</span>
+                    </button>
+                    <button id="nav-leaderboard" class="flex flex-col items-center text-gray-500 dark:text-gray-400">
+                        <i class="fas fa-trophy text-lg"></i>
+                        <span class="text-xs mt-1">التصنيف</span>
+                    </button>
+                    <button id="nav-messages" class="flex flex-col items-center text-gray-500 dark:text-gray-400 relative">
+                        <i class="fas fa-comments text-lg"></i>
+                        <span class="text-xs mt-1">الرسائل</span>
+                        <span class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">2</span>
+                    </button>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // تشغيل أو إيقاف تقليد Firebase - اضبط على false للإنتاج
+        const MOCK_FIREBASE = true;
+        
+        // محاكاة تأخير تحميل
+        setTimeout(() => {
+            document.getElementById('loading-screen').classList.add('hidden');
+            if (MOCK_FIREBASE) {
+                document.getElementById('login-screen').classList.remove('hidden');
+            }
+        }, 1500);
+
+        // تبديل بين شاشات تسجيل الدخول والتسجيل
+        document.getElementById('show-register')?.addEventListener('click', () => {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('register-screen').classList.remove('hidden');
+        });
+        
+        document.getElementById('show-login')?.addEventListener('click', () => {
+            document.getElementById('register-screen').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+        });
+        
+        // تبديل قائمة المستخدم
+        document.getElementById('user-menu-btn')?.addEventListener('click', () => {
+            const menu = document.getElementById('user-menu');
+            menu.classList.toggle('hidden');
+        });
+        
+        // تبديل قائمة الإشعارات
+        document.getElementById('notifications-btn')?.addEventListener('click', () => {
+            const menu = document.getElementById('notifications-menu');
+            menu.classList.toggle('hidden');
+            
+            // عند فتح الإشعارات، نخفي علامة العدد
+            if (!menu.classList.contains('hidden')) {
+                document.getElementById('notifications-count').classList.add('hidden');
+                document.getElementById('new-notifications-badge').classList.add('hidden');
+                
+                // إضافة إشعارات لأغراض العرض
+                populateNotifications();
+            }
+        });
+        
+        // تعيين كل الإشعارات كمقروءة
+        document.getElementById('mark-all-read')?.addEventListener('click', () => {
+            const notificationItems = document.querySelectorAll('.notification-unread');
+            notificationItems.forEach(item => {
+                item.classList.remove('notification-unread', 'bg-blue-50', 'dark:bg-blue-900/20');
+            });
+            showNotification('تم تعيين جميع الإشعارات كمقروءة');
+        });
+        
+        // تسجيل الحضور
+        document.getElementById('attendance-btn')?.addEventListener('click', function() {
+            this.classList.remove('bg-green-500', 'hover:bg-green-600');
+            this.classList.add('bg-gray-400', 'cursor-not-allowed');
+            this.innerHTML = '<i class="fas fa-check-circle mr-1"></i> <span>تم التسجيل</span>';
+            this.disabled = true;
+            
+            showNotification('تم تسجيل حضورك اليومي بنجاح! +5 نقاط');
+        });
+        
+        // التحديث اليدوي للبيانات
+        document.getElementById('manual-refresh')?.addEventListener('click', function() {
+            this.disabled = true;
+            this.classList.add('opacity-75');
+            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> جارٍ التحديث...';
+            
+            // محاكاة تأخير التحديث
+            setTimeout(() => {
+                this.disabled = false;
+                this.classList.remove('opacity-75');
+                this.innerHTML = 'تحديث الآن';
+                
+                // تحديث بعض البيانات العشوائية
+                const randomPoints = Math.floor(Math.random() * 10) + 1;
+                const currentPoints = parseInt(document.getElementById('total-points').textContent);
+                document.getElementById('total-points').textContent = (currentPoints + randomPoints).toString();
+                document.getElementById('today-points').textContent = `+${parseInt(document.getElementById('today-points').textContent.replace('+', '')) + randomPoints} اليوم`;
+                document.getElementById('last-update').textContent = 'آخر تحديث تلقائي: الآن';
+                
+                showNotification(`تم تحديث البيانات بنجاح! +${randomPoints} نقطة جديدة`);
+                
+                // إضافة إشعار جديد
+                addNewNotification('تم اكتشاف نشاط جديد على حساباتك!', 'تم اكتشاف تفاعلات جديدة وإضافة النقاط تلقائيًا.');
+            }, 2000);
+        });
+        
+        // تصدير التقرير اليومي
+        document.getElementById('export-daily')?.addEventListener('click', function() {
+            exportToExcel('تقرير_المتفاعلين_اليومي');
+        });
+        
+        // تصدير التقرير الأسبوعي
+        document.getElementById('export-weekly')?.addEventListener('click', function() {
+            exportToExcel('تقرير_المتفاعلين_الأسبوعي');
+        });
+        
+        // فتح نموذج التقرير المخصص
+        document.getElementById('custom-report')?.addEventListener('click', function() {
+            document.getElementById('custom-report-modal').classList.remove('hidden');
+        });
+        
+        // إغلاق نموذج التقرير المخصص
+        document.getElementById('close-custom-report')?.addEventListener('click', function() {
+            document.getElementById('custom-report-modal').classList.add('hidden');
+        });
+        
+        // تغيير نطاق التاريخ
+        document.getElementById('report-date-range')?.addEventListener('change', function() {
+            if (this.value === 'custom') {
+                document.getElementById('custom-date').classList.remove('hidden');
+            } else {
+                document.getElementById('custom-date').classList.add('hidden');
+            }
+        });
+        
+        // إنشاء تقرير مخصص
+        document.getElementById('generate-report')?.addEventListener('click', function() {
+            const reportType = document.getElementById('report-type').value;
+            const dateRange = document.getElementById('report-date-range').value;
+            
+            document.getElementById('custom-report-modal').classList.add('hidden');
+            
+            const reportName = `تقرير_${reportType}_${dateRange}`;
+            exportToExcel(reportName);
+        });
+        
+        // تصدير إلى إكسل
+        function exportToExcel(reportName) {
+            // إنشاء بيانات وهمية لتمثيل التقرير
+            const mockData = [
+                { الترتيب: 1, المستخدم: 'أحمد محمد', 'النقاط اليوم': 86, المستوى: 'متقدم', 'تيك توك': 32, إنستغرام: 25, 'منصة إكس': 15, فيسبوك: 14 },
+                { الترتيب: 2, المستخدم: 'سارة علي', 'النقاط اليوم': 52, المستوى: 'متوسط', 'تيك توك': 18, إنستغرام: 20, 'منصة إكس': 8, فيسبوك: 6 },
+                { الترتيب: 3, المستخدم: 'محمد عبدالله', 'النقاط اليوم': 36, المستوى: 'متوسط', 'تيك توك': 12, إنستغرام: 10, 'منصة إكس': 9, فيسبوك: 5 },
+                { الترتيب: 4, المستخدم: 'أنت', 'النقاط اليوم': 24, المستوى: 'مبتدئ', 'تيك توك': 8, إنستغرام: 7, 'منصة إكس': 5, فيسبوك: 4 },
+                { الترتيب: 5, المستخدم: 'خالد عمر', 'النقاط اليوم': 18, المستوى: 'مبتدئ', 'تيك توك': 5, إنستغرام: 6, 'منصة إكس': 4, فيسبوك: 3 },
+                { الترتيب: 6, المستخدم: 'فاطمة أحمد', 'النقاط اليوم': 15, المستوى: 'مبتدئ', 'تيك توك': 4, إنستغرام: 5, 'منصة إكس': 3, فيسبوك: 3 },
+                { الترتيب: 7, المستخدم: 'عبدالله محمد', 'النقاط اليوم': 12, المستوى: 'مبتدئ', 'تيك توك': 3, إنستغرام: 4, 'منصة إكس': 3, فيسبوك: 2 },
+                { الترتيب: 8, المستخدم: 'نورة سعيد', 'النقاط اليوم': 10, المستوى: 'مبتدئ', 'تيك توك': 3, إنستغرام: 3, 'منصة إكس': 2, فيسبوك: 2 }
+            ];
+            
+            try {
+                // إنشاء ورقة عمل
+                const worksheet = XLSX.utils.json_to_sheet(mockData);
+                
+                // إنشاء مصنف (workbook)
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "المتفاعلين");
+                
+                // تصدير المصنف
+                XLSX.writeFile(workbook, `${reportName}.xlsx`);
+                
+                showNotification('تم تصدير التقرير بنجاح!');
+            } catch (error) {
+                console.error('خطأ في تصدير الملف:', error);
+                showNotification('حدث خطأ أثناء تصدير التقرير.', 'error');
+            }
+        }
+        
+        // إضافة إشعارات نموذجية
+        function populateNotifications() {
+            const notificationsList = document.getElementById('notifications-list');
+            
+            // تفريغ القائمة أولا
+            notificationsList.innerHTML = '';
+            
+            // إضافة إشعارات نموذجية
+            const notifications = [
+                { title: 'تم التحقق من حسابك', message: 'تم التحقق من حساب تيك توك الخاص بك بنجاح.', time: 'منذ 5 دقائق', unread: true },
+                { title: 'نقاط جديدة', message: 'تم إضافة 15 نقطة من تفاعلات إنستغرام.', time: 'منذ 30 دقيقة', unread: true },
+                { title: 'تحديث تلقائي', message: 'تم تحديث بياناتك تلقائيًا من جميع المنصات.', time: 'منذ ساعة', unread: true },
+                { title: 'تقرير جديد', message: 'تم إنشاء تقرير المتفاعلين اليومي.', time: 'منذ 5 ساعات', unread: false },
+                { title: 'تحديث النظام', message: 'تم تحديث نظام تتبع النقاط إلى الإصدار الأحدث.', time: 'أمس', unread: false }
+            ];
+            
+            notifications.forEach(notif => {
+                const notificationItem = document.createElement('div');
+                notificationItem.className = `px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${notif.unread ? 'notification-unread bg-blue-50 dark:bg-blue-900/20' : ''}`;
+                
+                notificationItem.innerHTML = `
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 pt-0.5">
+                            <div class="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center">
+                                <i class="fas fa-bell text-sm"></i>
+                            </div>
+                        </div>
+                        <div class="mr-3 flex-1">
+                            <p class="text-sm font-medium">${notif.title}</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">${notif.message}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">${notif.time}</p>
+                        </div>
+                        ${notif.unread ? '<span class="h-2 w-2 rounded-full bg-primary"></span>' : ''}
+                    </div>
+                `;
+                
+                notificationsList.appendChild(notificationItem);
+                
+                // إضافة مستمع حدث للنقر على الإشعار
+                notificationItem.addEventListener('click', function() {
+                    this.classList.remove('notification-unread', 'bg-blue-50', 'dark:bg-blue-900/20');
+                    const indicator = this.querySelector('.bg-primary.rounded-full');
+                    if (indicator) {
+                        indicator.remove();
+                    }
+                });
+            });
+        }
+        
+        // إضافة إشعار جديد
+        function addNewNotification(title, message) {
+            // تفعيل مؤشر الإشعارات الجديدة
+            document.getElementById('notifications-count').classList.remove('hidden');
+            document.getElementById('new-notifications-badge').classList.remove('hidden');
+            
+            // إضافة الإشعار إلى القائمة إذا كانت مفتوحة
+            const notificationsList = document.getElementById('notifications-list');
+            if (notificationsList.innerHTML !== '') {
+                const notificationItem = document.createElement('div');
+                notificationItem.className = 'notification-unread bg-blue-50 dark:bg-blue-900/20 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer';
+                
+                notificationItem.innerHTML = `
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 pt-0.5">
+                            <div class="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center">
+                                <i class="fas fa-bell text-sm"></i>
+                            </div>
+                        </div>
+                        <div class="mr-3 flex-1">
+                            <p class="text-sm font-medium">${title}</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">${message}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">الآن</p>
+                        </div>
+                        <span class="h-2 w-2 rounded-full bg-primary"></span>
+                    </div>
+                `;
+                
+                notificationsList.prepend(notificationItem);
+            }
+        }
+        
+        // دالة لعرض الإشعارات
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-500 ease-in-out opacity-0 fixed top-4 left-1/2 transform -translate-x-1/2`;
+            
+            if (type === 'error') {
+                notification.classList.add('bg-red-500', 'text-white');
+            } else {
+                notification.classList.add('bg-green-500', 'text-white');
+            }
+            
+            notification.textContent = message;
+            document.getElementById('notification-container').appendChild(notification);
+            
+            // إظهار الإشعار
+            setTimeout(() => {
+                notification.classList.remove('opacity-0');
+                notification.classList.add('opacity-100');
+            }, 100);
+            
+            // إزالة الإشعار بعد فترة
+            setTimeout(() => {
+                notification.classList.remove('opacity-100');
+                notification.classList.add('opacity-0');
+                setTimeout(() => {
+                    notification.remove();
+                }, 500);
+            }, 3000);
+        }
+        
+        // إظهار رسائل الخطأ في نماذج التسجيل
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.classList.remove('hidden');
+        }
+        
+        // تحديث معلومات المستخدم في القائمة
+        function updateUserInfo(user) {
+            if (user) {
+                document.getElementById('user-name').textContent = user.displayName || 'المستخدم';
+                document.getElementById('user-email').textContent = user.email || '';
+            }
+        }
+        
+        // سيتم استدعاؤه بعد تسجيل الدخول
+        function initializeApp() {
+            console.log('تم تهيئة التطبيق');
+            
+            // محاكاة إشعارات دورية
+            setInterval(() => {
+                // فرصة عشوائية 20% لإضافة إشعار
+                if (Math.random() < 0.2) {
+                    const notifications = [
+                        { title: 'نقاط جديدة', message: `تم إضافة ${Math.floor(Math.random() * 5) + 1} نقاط من تفاعلات تيك توك.` },
+                        { title: 'نشاط جديد', message: 'تم اكتشاف تفاعلات جديدة على حسابك.' },
+                        { title: 'تحديث تلقائي', message: 'تم تحديث البيانات تلقائيًا من جميع المنصات.' }
+                    ];
+                    
+                    const randomNotif = notifications[Math.floor(Math.random() * notifications.length)];
+                    addNewNotification(randomNotif.title, randomNotif.message);
+                }
+            }, 30000); // كل 30 ثانية للعرض، يمكن تغييره إلى فترة أطول
+        }
+        
+        // التعامل مع تسجيل الدخول لأغراض العرض
+        setTimeout(() => {
+            // محاكاة تسجيل الدخول
+            document.getElementById('login-btn')?.addEventListener('click', () => {
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                
+                if (!email || !password) {
+                    showError('login-error', 'يرجى إدخال البريد الإلكتروني وكلمة المرور');
+                    return;
+                }
+                
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+                
+                updateUserInfo({
+                    displayName: 'أحمد محمد',
+                    email: email || 'user@example.com'
+                });
+                
+                initializeApp();
+                showNotification('تم تسجيل الدخول بنجاح!');
+            });
+            
+            // محاكاة التسجيل
+            document.getElementById('register-btn')?.addEventListener('click', () => {
+                const name = document.getElementById('reg-name')?.value;
+                const email = document.getElementById('reg-email')?.value;
+                const password = document.getElementById('reg-password')?.value;
+                
+                if (!name || !email || !password) {
+                    showError('register-error', 'يرجى إكمال جميع الحقول');
+                    return;
+                }
+                
+                document.getElementById('register-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+                
+                updateUserInfo({
+                    displayName: name,
+                    email: email
+                });
+                
+                initializeApp();
+                showNotification('تم إنشاء الحساب بنجاح!');
+            });
+        }, 500);
+    </script>
+  // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyAkzXjpu0KMd8S_bIYKMV0X614NftI-FhU",
+  authDomain: "nosra-plus.firebaseapp.com",
+  projectId: "nosra-plus",
+  storageBucket: "nosra-plus.firebasestorage.app",
+  messagingSenderId: "838717853309",
+  appId: "1:838717853309:web:d4dbd7b26cddf89e36ab14"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+</body>
+</html>
