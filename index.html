@@ -649,8 +649,87 @@
 
     <script>
         // تشغيل أو إيقاف تقليد Firebase - اضبط على false للإنتاج
-        const MOCK_FIREBASE = true;
+        const MOCK_FIREBASE = false;
         
+        // إعداد Firebase
+document.addEventListener('DOMContentLoaded', function() {
+  // بدء المصادقة
+  firebase.auth().onAuthStateChanged(function(user) {
+    if (user) {
+      // المستخدم مسجل الدخول
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('main-app').classList.remove('hidden');
+      
+      updateUserInfo(user);
+      initializeApp();
+    } else {
+      // المستخدم غير مسجل الدخول
+      document.getElementById('main-app').classList.add('hidden');
+      document.getElementById('login-screen').classList.remove('hidden');
+    }
+  });
+  
+  // إعداد أحداث تسجيل الدخول
+  document.getElementById('login-btn').addEventListener('click', function() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    
+    if (!email || !password) {
+      showError('login-error', 'يرجى إدخال البريد الإلكتروني وكلمة المرور');
+      return;
+    }
+    
+    firebase.auth().signInWithEmailAndPassword(email, password)
+      .then(function() {
+        showNotification('تم تسجيل الدخول بنجاح!');
+      })
+      .catch(function(error) {
+        showError('login-error', 'خطأ في تسجيل الدخول: ' + error.message);
+      });
+  });
+  
+  // إعداد أحداث التسجيل
+  document.getElementById('register-btn').addEventListener('click', function() {
+    const name = document.getElementById('reg-name').value;
+    const email = document.getElementById('reg-email').value;
+    const password = document.getElementById('reg-password').value;
+    
+    if (!name || !email || !password) {
+      showError('register-error', 'يرجى إكمال جميع الحقول');
+      return;
+    }
+    
+    firebase.auth().createUserWithEmailAndPassword(email, password)
+      .then(function(result) {
+        // إضافة اسم المستخدم
+        return result.user.updateProfile({
+          displayName: name
+        }).then(function() {
+          // إضافة بيانات المستخدم إلى Firestore
+          return firebase.firestore().collection('users').doc(result.user.uid).set({
+            name: name,
+            email: email,
+            points: 0,
+            level: 1,
+            joinDate: new Date(),
+            platforms: {
+              tiktok: { total: 0, like: 0, share: 0, comment: 0 },
+              instagram: { total: 0, like: 0, share: 0, comment: 0 },
+              twitter: { total: 0, like: 0, share: 0, comment: 0 },
+              facebook: { total: 0, like: 0, share: 0, comment: 0 }
+            }
+          });
+        });
+      })
+      .then(function() {
+        showNotification('تم إنشاء الحساب بنجاح!');
+      })
+      .catch(function(error) {
+        showError('register-error', 'خطأ في إنشاء الحساب: ' + error.message);
+      });
+  });
+});
+
         // محاكاة تأخير تحميل
         setTimeout(() => {
             document.getElementById('loading-screen').classList.add('hidden');
@@ -1018,6 +1097,8 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
+
 const app = initializeApp(firebaseConfig);
+    "اضافة Firebase SDK"
 </body>
 </html>
